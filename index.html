@@ -4,44 +4,75 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Team Scheduling Tool</title>
+
   <style>
+    /* Theme tokens
+       - default: light
+       - dark theme: html[data-theme="dark"]
+    */
+
     :root{
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+      /* Light theme */
+      --bg:#f6f8fc;
+      --panel:#ffffff;
+      --panel2:#ffffff;
+      --text:#0f172a;
+      --muted:#475569;
+      --border:rgba(15,23,42,.14);
+      --accent:#0284c7;
+      --accent2:#7c3aed;
+      --good:#059669;
+      --bad:#e11d48;
+      --shadow: 0 12px 30px rgba(2,6,23,.10);
+
+      --slotBg: rgba(2,6,23,.03);
+      --slotBgHover: rgba(2,132,199,.06);
+      --slotSelBg: rgba(5,150,105,.10);
+      --slotComBg: rgba(2,132,199,.08);
+      --toastBg: rgba(255,255,255,.92);
+
+      --radius: 18px;
+      --radius2: 22px;
+    }
+
+    html[data-theme="dark"]{
       --bg:#0b0f19;
       --panel:#10182a;
       --panel2:#0f1729;
-      --card:#121c31;
       --text:#e9eef9;
       --muted:#94a3b8;
       --border:rgba(148,163,184,.22);
       --accent:#7dd3fc;
       --accent2:#c084fc;
       --good:#34d399;
-      --warn:#fbbf24;
       --bad:#fb7185;
       --shadow: 0 12px 30px rgba(0,0,0,.35);
-      --radius:18px;
-      --radius2:22px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+      --slotBg: rgba(10,14,24,.46);
+      --slotBgHover: rgba(125,211,252,.12);
+      --slotSelBg: rgba(52,211,153,.10);
+      --slotComBg: rgba(125,211,252,.10);
+      --toastBg: rgba(15,23,41,.90);
     }
 
     *{box-sizing:border-box}
     html,body{height:100%}
+
     body{
       margin:0;
       font-family:var(--sans);
-      background: radial-gradient(1200px 700px at 20% 10%, rgba(125,211,252,.18), transparent 60%),
-                  radial-gradient(1000px 650px at 85% 15%, rgba(192,132,252,.16), transparent 55%),
-                  linear-gradient(180deg, #070a12 0%, var(--bg) 100%);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 60%),
+        radial-gradient(1000px 650px at 85% 15%, color-mix(in srgb, var(--accent2) 18%, transparent), transparent 55%),
+        linear-gradient(180deg, color-mix(in srgb, var(--bg) 92%, #ffffff) 0%, var(--bg) 100%);
       color:var(--text);
       line-height:1.35;
     }
 
-    .wrap{
-      max-width:1100px;
-      margin:0 auto;
-      padding:28px 18px 54px;
-    }
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 54px;}
 
     header{
       display:flex;
@@ -51,27 +82,18 @@
       margin-bottom:18px;
     }
 
-    .title{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-
     h1{
       margin:0;
       font-size: clamp(22px, 4vw, 34px);
       letter-spacing:-.02em;
     }
 
-    .subtitle{
-      color:var(--muted);
-      font-size: 14px;
-    }
+    .subtitle{color:var(--muted);font-size:14px;margin-top:6px;}
 
-    .badgeRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .badgeRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
     .pill{
       border:1px solid var(--border);
-      background:rgba(16,24,42,.55);
+      background:color-mix(in srgb, var(--panel) 86%, transparent);
       padding:8px 10px;
       border-radius:999px;
       color:var(--muted);
@@ -79,22 +101,18 @@
       display:flex;
       align-items:center;
       gap:8px;
-      box-shadow: 0 1px 0 rgba(255,255,255,.04) inset;
     }
-    .dot{width:8px;height:8px;border-radius:99px;background:var(--accent)}
+    .dot{width:8px;height:8px;border-radius:99px;background:var(--accent);}
 
     .grid{
       display:grid;
       grid-template-columns: 380px 1fr;
       gap:14px;
     }
-
-    @media (max-width: 980px){
-      .grid{grid-template-columns:1fr;}
-    }
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
 
     .panel{
-      background: linear-gradient(180deg, rgba(16,24,42,.8), rgba(15,23,41,.72));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, transparent), color-mix(in srgb, var(--panel2) 88%, transparent));
       border:1px solid var(--border);
       border-radius:var(--radius2);
       box-shadow:var(--shadow);
@@ -103,42 +121,44 @@
 
     .panelHead{
       padding:16px 16px 12px;
-      border-bottom:1px solid rgba(148,163,184,.14);
+      border-bottom:1px solid color-mix(in srgb, var(--border) 72%, transparent);
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
       gap:12px;
     }
 
-    .panelHead h2{
-      margin:0;
-      font-size:16px;
-      letter-spacing:-.01em;
-    }
+    .panelHead h2{margin:0;font-size:16px;letter-spacing:-.01em;}
+    .panelHead p{margin:6px 0 0;color:var(--muted);font-size:13px;}
+    .panelBody{padding:16px;}
 
-    .panelHead p{margin:6px 0 0; color:var(--muted); font-size:13px}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+    .inputRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .inputRow input{flex:1;}
+    .btnSubtle{padding:9px 10px;font-size:12px;white-space:nowrap;}
+    label{font-size:12px;color:var(--muted);}
 
-    .panelBody{padding:16px}
-
-    .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px}
-    label{font-size:12px; color:var(--muted)}
     input{
       width:100%;
       padding:11px 12px;
       border-radius:14px;
-      border:1px solid rgba(148,163,184,.22);
-      background:rgba(10,14,24,.55);
+      border:1px solid color-mix(in srgb, var(--border) 90%, transparent);
+      background: color-mix(in srgb, var(--panel) 80%, transparent);
       color:var(--text);
       outline:none;
       transition:.15s;
     }
-    input:focus{border-color:rgba(125,211,252,.55); box-shadow:0 0 0 4px rgba(125,211,252,.14)}
 
-    .row{display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    input:focus{
+      border-color:color-mix(in srgb, var(--accent) 70%, transparent);
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .hint{font-size:12px;color:var(--muted);margin-top:-6px;}
 
     button{
-      border:1px solid rgba(148,163,184,.22);
-      background: linear-gradient(180deg, rgba(125,211,252,.16), rgba(16,24,42,.18));
+      border:1px solid color-mix(in srgb, var(--border) 90%, transparent);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--panel) 70%, transparent));
       color:var(--text);
       padding:10px 12px;
       border-radius:14px;
@@ -148,30 +168,26 @@
       transition:.15s;
       user-select:none;
     }
-    button:hover{transform: translateY(-1px); border-color:rgba(125,211,252,.55)}
-    button:active{transform: translateY(0)}
+    button:hover{transform: translateY(-1px); border-color:color-mix(in srgb, var(--accent) 55%, transparent);}
+    button:active{transform: translateY(0);}
+
+    button.isDisabled,
+    .slot.isDisabled{
+      opacity:.6;
+      cursor:not-allowed;
+      transform:none;
+    }
+    button.isDisabled:hover,
+    .slot.isDisabled:hover{
+      transform:none;
+      border-color:color-mix(in srgb, var(--border) 90%, transparent);
+    }
 
     .btnDanger{
-      background: linear-gradient(180deg, rgba(251,113,133,.18), rgba(16,24,42,.18));
+      background: linear-gradient(180deg, color-mix(in srgb, var(--bad) 12%, transparent), color-mix(in srgb, var(--panel) 70%, transparent));
     }
 
-    .hint{font-size:12px; color:var(--muted); margin-top:-6px}
-
-    .infoBox{
-      padding:12px 12px;
-      border-radius:16px;
-      border:1px solid rgba(148,163,184,.18);
-      background: rgba(15,23,41,.35);
-      color:var(--muted);
-      font-size:12.5px;
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-    }
-
-    .infoBox b{color:var(--text); font-weight:700}
-
-    .calendarWrap{padding:0}
+    .row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
 
     .slotGrid{
       padding:14px 14px 16px;
@@ -179,14 +195,11 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap:10px;
     }
-
-    @media (max-width: 560px){
-      .slotGrid{grid-template-columns: repeat(2, minmax(0, 1fr));}
-    }
+    @media (max-width: 560px){ .slotGrid{grid-template-columns: repeat(2, minmax(0, 1fr));} }
 
     .slot{
-      border:1px solid rgba(148,163,184,.18);
-      background: rgba(10,14,24,.46);
+      border:1px solid color-mix(in srgb, var(--border) 78%, transparent);
+      background: var(--slotBg);
       border-radius:16px;
       padding:10px 10px;
       cursor:pointer;
@@ -195,58 +208,38 @@
       flex-direction:column;
       gap:6px;
       min-height:74px;
-      position:relative;
-      overflow:hidden;
+      text-align:left;
     }
 
-    .slot:hover{transform: translateY(-1px); border-color:rgba(125,211,252,.55)}
+    .slot:hover{
+      transform: translateY(-1px);
+      border-color:color-mix(in srgb, var(--accent) 55%, transparent);
+      background: var(--slotBgHover);
+    }
 
     .slot.selected{
-      border-color:rgba(52,211,153,.65);
-      box-shadow:0 0 0 4px rgba(52,211,153,.14);
-      background: rgba(52,211,153,.10);
+      border-color:color-mix(in srgb, var(--good) 65%, transparent);
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--good) 14%, transparent);
+      background: var(--slotSelBg);
     }
 
     .slot.common{
-      border-color: rgba(125,211,252,.65);
-      box-shadow:0 0 0 4px rgba(125,211,252,.14);
+      border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+      background: var(--slotComBg);
     }
 
-    .slot .top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
+    .slot .top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .slot .labelEt{font-weight:800;font-size:13px;}
+    .slot .labelLocal{font-family:var(--mono);font-size:11px;color:var(--muted);}
 
-    .slot .labelEt{font-weight:800; letter-spacing:-.01em; font-size:13px}
-    .slot .labelLocal{font-family:var(--mono); font-size:11px; color:var(--muted)}
-
-    .count{
-      font-size:11px;
-      color:var(--muted);
-      display:flex;
-      align-items:center;
-      gap:6px;
-    }
-
-    .miniBar{
-      width:46px;
-      height:6px;
-      border-radius:999px;
-      background: rgba(148,163,184,.18);
-      overflow:hidden;
-    }
-    .miniBar > span{
-      display:block;
-      height:100%;
-      width:0;
-      background: linear-gradient(90deg, rgba(125,211,252,.85), rgba(192,132,252,.85));
-    }
+    .count{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap;}
+    .miniBar{width:46px;height:6px;border-radius:999px;background: color-mix(in srgb, var(--border) 70%, transparent);overflow:hidden;}
+    .miniBar > span{display:block;height:100%;width:0;background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 85%, transparent), color-mix(in srgb, var(--accent2) 85%, transparent));}
 
     .legend{
       padding:12px 14px 14px;
-      border-top:1px solid rgba(148,163,184,.14);
+      border-top:1px solid color-mix(in srgb, var(--border) 72%, transparent);
       display:flex;
       gap:10px;
       flex-wrap:wrap;
@@ -254,13 +247,13 @@
       justify-content:space-between;
     }
 
-    .key{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
-    .keyItem{display:flex; gap:8px; align-items:center; color:var(--muted); font-size:12px}
-    .swatch{width:10px;height:10px;border-radius:4px;border:1px solid rgba(148,163,184,.25)}
-    .swSel{background:rgba(52,211,153,.25); border-color:rgba(52,211,153,.65)}
-    .swCom{background:rgba(125,211,252,.22); border-color:rgba(125,211,252,.65)}
+    .key{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+    .keyItem{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;}
+    .swatch{width:10px;height:10px;border-radius:4px;border:1px solid color-mix(in srgb, var(--border) 90%, transparent);}
+    .swSel{background:color-mix(in srgb, var(--good) 22%, transparent); border-color:color-mix(in srgb, var(--good) 70%, transparent);}
+    .swCom{background:color-mix(in srgb, var(--accent) 20%, transparent); border-color:color-mix(in srgb, var(--accent) 70%, transparent);}
 
-    .footerPanel{margin-top:14px}
+    .footerPanel{margin-top:14px;}
 
     .members{
       display:grid;
@@ -268,14 +261,11 @@
       gap:10px;
       padding:14px;
     }
-
-    @media (max-width: 760px){
-      .members{grid-template-columns:1fr;}
-    }
+    @media (max-width: 760px){ .members{grid-template-columns:1fr;} }
 
     .memberCard{
-      border:1px solid rgba(148,163,184,.16);
-      background: rgba(10,14,24,.46);
+      border:1px solid color-mix(in srgb, var(--border) 72%, transparent);
+      background: var(--slotBg);
       border-radius:16px;
       padding:12px;
       display:flex;
@@ -284,32 +274,33 @@
       min-height:86px;
     }
 
-    .memberTop{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
-    .memberName{font-weight:800; letter-spacing:-.01em}
-    .memberEmail{color:var(--muted); font-size:12px; word-break:break-all}
+    .memberTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+    .memberName{font-weight:800;}
+    .memberEmail{color:var(--muted);font-size:12px;word-break:break-all;}
 
-    .chips{display:flex; gap:8px; flex-wrap:wrap}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;}
     .chip{
       font-family:var(--mono);
       font-size:11px;
       color:var(--text);
-      background: rgba(125,211,252,.10);
-      border:1px solid rgba(125,211,252,.22);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      border:1px solid color-mix(in srgb, var(--accent) 20%, transparent);
       padding:6px 8px;
       border-radius:999px;
     }
-
-    .chip.none{color:var(--muted); background: rgba(148,163,184,.10); border-color: rgba(148,163,184,.16)}
-
-    .rightNote{color:var(--muted); font-size:12px; text-align:right}
+    .chip.none{
+      color:var(--muted);
+      background: color-mix(in srgb, var(--border) 22%, transparent);
+      border-color: color-mix(in srgb, var(--border) 40%, transparent);
+    }
 
     .toast{
       position:fixed;
       left:50%;
       bottom:18px;
       transform:translateX(-50%);
-      background: rgba(15,23,41,.90);
-      border:1px solid rgba(148,163,184,.18);
+      background: var(--toastBg);
+      border:1px solid color-mix(in srgb, var(--border) 72%, transparent);
       padding:10px 12px;
       border-radius:999px;
       color:var(--text);
@@ -319,61 +310,63 @@
       gap:10px;
       align-items:center;
       z-index:50;
+      backdrop-filter: blur(10px);
     }
-
-    .toast.show{display:flex; animation: pop .18s ease-out}
-    @keyframes pop{from{transform:translateX(-50%) translateY(6px); opacity:.7} to{transform:translateX(-50%) translateY(0); opacity:1}}
-
-    .srOnly{position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden;}
-
+    .toast.show{display:flex;}
   </style>
 </head>
+
 <body>
   <div class="wrap">
     <header>
-      <div class="title">
+      <div>
         <h1>Team Scheduling Tool</h1>
-        <div class="subtitle">Select your preferred 1-hour meeting slots (shown in Eastern Time and your local time). Everyone’s selections appear below to help you find overlap.</div>
-        <div class="badgeRow" style="margin-top:10px">
+        <div class="subtitle">
+          Select your preferred 1-hour meeting slots (Eastern Time + your local time). The team list updates as people submit.
+        </div>
+
+        <div class="badgeRow">
           <div class="pill"><span class="dot"></span><span><b>Scheduling closes:</b> May 15, 2026</span></div>
+          <div class="pill"><span class="dot" id="scheduleDot" style="background:var(--good)"></span><span id="schedulePill">Scheduling open</span></div>
           <div class="pill"><span class="dot" style="background:var(--good)"></span><span id="tzPill">Your time zone: …</span></div>
           <div class="pill"><span class="dot" style="background:var(--accent2)"></span><span>Slots: 9:00 AM–5:00 PM ET (last start 4:00 PM)</span></div>
         </div>
       </div>
-      <div class="rightNote" id="statusNote"></div>
+
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+        <button id="themeBtn" type="button" style="padding:9px 10px">Toggle theme</button>
+      </div>
     </header>
 
     <div class="grid">
-      <!-- Left: Identity -->
+      <!-- Identity -->
       <section class="panel">
         <div class="panelHead">
           <div>
             <h2>Your info</h2>
-            <p>Use the same email each time to update your selections.</p>
+            <p>Selections are scoped by room code.</p>
           </div>
         </div>
+
         <div class="panelBody">
+          <div class="field">
+            <label for="room">Room code / Team name</label>
+            <div class="inputRow">
+              <input id="room" placeholder="e.g., physics-lab / team-standup" autocomplete="off" required />
+              <button id="copyRoomBtn" class="btnSubtle" type="button">Copy</button>
+            </div>
+            <div class="hint">Room codes are lowercased; spaces become hyphens.</div>
+          </div>
+
           <div class="field">
             <label for="name">Name</label>
             <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
           </div>
+
           <div class="field">
             <label for="email">Email</label>
             <input id="email" placeholder="e.g., alex@company.com" autocomplete="email" inputmode="email" />
-            <div class="hint">Selections are saved to your browser storage (local only).</div>
-          </div>
-
-          <div class="infoBox" style="margin:14px 0 12px">
-            <div style="margin-top:1px; font-size:14px">ℹ️</div>
-            <div>
-              <div><b>How it works</b></div>
-              <div style="margin-top:4px">
-                Click one or more 1-hour blocks. Your choices save automatically and appear in the team list below.
-              </div>
-              <div style="margin-top:6px">
-                <b>Tip:</b> Look for blocks highlighted as <span style="color:var(--accent)">common</span> (selected by everyone who has submitted).
-              </div>
-            </div>
+            <div class="hint">Saved to this room via Firebase Firestore (shared across devices).</div>
           </div>
 
           <div class="row" style="margin-top:14px">
@@ -383,12 +376,12 @@
         </div>
       </section>
 
-      <!-- Right: Slots -->
-      <section class="panel calendarWrap">
+      <!-- Slots -->
+      <section class="panel">
         <div class="panelHead">
           <div>
             <h2>Select 1-hour slots</h2>
-            <p>Eastern Time (ET) shown in bold; your local time shown below.</p>
+            <p>ET shown in bold; your local time below.</p>
           </div>
           <div style="text-align:right">
             <div style="color:var(--muted); font-size:12px">Members submitted</div>
@@ -396,7 +389,7 @@
           </div>
         </div>
 
-        <div class="slotGrid" id="slotGrid" aria-label="Time slot selection"></div>
+        <div class="slotGrid" id="slotGrid"></div>
 
         <div class="legend">
           <div class="key">
@@ -411,18 +404,19 @@
       </section>
     </div>
 
-    <!-- Bottom: Team selections -->
+    <!-- Team list -->
     <section class="panel footerPanel">
       <div class="panelHead">
         <div>
-          <h2>Current team selections</h2>
-          <p>As people submit, you’ll see convergence and common slots.</p>
+          <h2>Current team selections (this room)</h2>
+          <p>Watch convergence by finding slots selected by everyone.</p>
         </div>
         <div class="row" style="gap:10px">
           <button id="exportBtn" type="button">Export JSON</button>
-          <button id="clearAllBtn" class="btnDanger" type="button">Clear all (this device)</button>
+          <div class="pill"><span class="dot" style="background:var(--bad)"></span><span>Room reset requires admin</span></div>
         </div>
       </div>
+
       <div class="members" id="members"></div>
     </section>
   </div>
@@ -431,163 +425,275 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script>
-    // -----------------------------
-    // Configuration
-    // -----------------------------
-    const STORAGE_KEY = 'teamScheduler_v1';
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-    // Slot start hours in ET (9..16 inclusive). Each slot is one hour.
-    const SLOT_START_HOURS_ET = Array.from({length: 8}, (_, i) => 9 + i); // 9..16
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7cfuYuOYIUoLavGJlfua4UYfawDcZMT0",
+      authDomain: "team-scheduler-7ddab.firebaseapp.com",
+      projectId: "team-scheduler-7ddab",
+      storageBucket: "team-scheduler-7ddab.firebasestorage.app",
+      messagingSenderId: "986652351844",
+      appId: "1:986652351844:web:09874d46b6e10b4572ae71",
+      measurementId: "G-72MHNL8GFY"
+    };
 
-    // Use a fixed reference date so timezone conversion is stable.
-    // We only care about time-of-day mapping, not the date itself.
-    const REF_DATE = { year: 2026, month: 5, day: 1 }; // May 1, 2026
+    const THEME_KEY = "teamScheduler_theme";
 
-    // Scheduling deadline label (UI only)
-    const DEADLINE_ISO = '2026-05-15';
+    // 1-hour slots starting in ET, 9..16 inclusive
+    const SLOT_START_HOURS_ET = Array.from({length: 8}, (_, i) => 9 + i);
+    const REF_DATE = { year: 2026, month: 5, day: 1 }; // stable conversion date
+    const SCHEDULE_CLOSE_ET = makeZonedDate(2026, 5, 15, 23, 59, "America/New_York", 59);
 
-    // -----------------------------
-    // DOM
-    // -----------------------------
-    const elName = document.getElementById('name');
-    const elEmail = document.getElementById('email');
-    const elSlotGrid = document.getElementById('slotGrid');
-    const elMembers = document.getElementById('members');
-    const elMemberCount = document.getElementById('memberCount');
-    const elStatusNote = document.getElementById('statusNote');
-    const elTzPill = document.getElementById('tzPill');
+    const elRoom = document.getElementById("room");
+    const elName = document.getElementById("name");
+    const elEmail = document.getElementById("email");
+    const elSlotGrid = document.getElementById("slotGrid");
+    const elMembers = document.getElementById("members");
+    const elMemberCount = document.getElementById("memberCount");
+    const elTzPill = document.getElementById("tzPill");
+    const elSchedulePill = document.getElementById("schedulePill");
+    const elScheduleDot = document.getElementById("scheduleDot");
 
-    const elSaveBtn = document.getElementById('saveBtn');
-    const elClearMeBtn = document.getElementById('clearMeBtn');
-    const elClearAllBtn = document.getElementById('clearAllBtn');
-    const elExportBtn = document.getElementById('exportBtn');
-    const elToggleLocal = document.getElementById('toggleLocal');
+    const elSaveBtn = document.getElementById("saveBtn");
+    const elClearMeBtn = document.getElementById("clearMeBtn");
+    const elExportBtn = document.getElementById("exportBtn");
+    const elToggleLocal = document.getElementById("toggleLocal");
+    const elThemeBtn = document.getElementById("themeBtn");
+    const elCopyRoomBtn = document.getElementById("copyRoomBtn");
 
-    const elToast = document.getElementById('toast');
-    const elToastMsg = document.getElementById('toastMsg');
+    const elToast = document.getElementById("toast");
+    const elToastMsg = document.getElementById("toastMsg");
 
-    // -----------------------------
-    // State
-    // -----------------------------
-    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Local";
+    elTzPill.textContent = `Your time zone: ${userTz}`;
+
     let showLocal = true;
-
-    // userSelections is keyed by slotKey (e.g. "09:00" ... "16:00")
     let userSelections = new Set();
+    let activeRoom = "";
+    let roomMembers = {};
+    let roomUnsub = null;
+    let scheduleClosed = false;
+    let db = null;
+    let roomDebounce = null;
 
-    // members store: { [emailLower]: { name, email, tz, slots: [slotKey], updatedAtISO } }
-    let store = loadStore();
-
-    // -----------------------------
-    // Utilities
-    // -----------------------------
-    function toast(msg){
-      elToastMsg.textContent = msg;
-      elToast.classList.add('show');
-      clearTimeout(toast._t);
-      toast._t = setTimeout(() => elToast.classList.remove('show'), 1800);
+    // ---------- Theme ----------
+    function applyTheme(theme){
+      if(theme === "dark") document.documentElement.setAttribute("data-theme","dark");
+      else document.documentElement.removeAttribute("data-theme");
+      localStorage.setItem(THEME_KEY, theme);
     }
 
-    function loadStore(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return { members: {} };
-        const parsed = JSON.parse(raw);
-        if(!parsed || typeof parsed !== 'object') return { members: {} };
-        if(!parsed.members || typeof parsed.members !== 'object') parsed.members = {};
-        return parsed;
-      }catch{
-        return { members: {} };
+    function toggleTheme(){
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      applyTheme(isDark ? "light" : "dark");
+      toast(isDark ? "Light theme" : "Dark theme");
+    }
+
+    function initTheme(){
+      const saved = localStorage.getItem(THEME_KEY);
+      if(saved === "dark" || saved === "light") applyTheme(saved);
+      else {
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        applyTheme(prefersDark ? "dark" : "light");
       }
     }
 
-    function saveStore(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    // ---------- Toast ----------
+    function toast(msg){
+      elToastMsg.textContent = msg;
+      elToast.classList.add("show");
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=> elToast.classList.remove("show"), 1800);
+    }
+
+    async function copyRoomCode(){
+      const rk = roomKey();
+      if(!rk) return toast("Enter a room code first.");
+      elRoom.value = rk;
+      onRoomCommit();
+
+      const ok = await copyToClipboard(rk);
+      toast(ok ? "Room code copied." : "Copy failed.");
+    }
+
+    async function copyToClipboard(text){
+      if(navigator.clipboard && window.isSecureContext){
+        try{
+          await navigator.clipboard.writeText(text);
+          return true;
+        }catch{}
+      }
+      return fallbackCopy(text);
+    }
+
+    function fallbackCopy(text){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try{
+        ok = document.execCommand("copy");
+      }catch{}
+      ta.remove();
+      return ok;
+    }
+
+    // ---------- Firebase ----------
+    function initFirebase(){
+      try{
+        if(!firebaseConfig || !firebaseConfig.apiKey) throw new Error("Missing Firebase config");
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+      }catch(err){
+        console.warn("Firebase init failed. Paste your config in index.html.", err);
+      }
+    }
+
+    function ensureDb(showToast=true){
+      if(db) return true;
+      if(showToast) toast("Add Firebase config first.");
+      return false;
+    }
+
+    // ---------- Room handling ----------
+    function normalizeRoom(room){
+      return String(room || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-_]/g, "");
+    }
+
+    function roomKey(){
+      return normalizeRoom(elRoom.value);
+    }
+
+    function setRoomFromInput(){
+      const normalized = roomKey();
+      if(normalized !== elRoom.value) elRoom.value = normalized;
+      if(normalized === activeRoom) return;
+
+      activeRoom = normalized;
+      roomMembers = {};
+      userSelections = new Set();
+
+      if(roomUnsub){
+        roomUnsub();
+        roomUnsub = null;
+      }
+
+      renderAll();
+
+      if(!activeRoom) return;
+      if(!ensureDb(false)) return;
+
+      roomUnsub = onSnapshot(
+        collection(db, "rooms", activeRoom, "members"),
+        (snapshot) => {
+          const nextMembers = {};
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() || {};
+            const emailLower = String(data.email || docSnap.id || "").toLowerCase();
+            const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === "function"
+              ? data.updatedAt.toDate()
+              : null;
+
+            nextMembers[emailLower] = {
+              name: data.name || "",
+              email: emailLower,
+              tz: data.tz || "",
+              slots: Array.isArray(data.slots) ? data.slots : [],
+              updatedAt
+            };
+          });
+
+          roomMembers = nextMembers;
+          syncFromSnapshot();
+          renderAll();
+        },
+        (err) => {
+          console.error(err);
+          toast("Unable to load room data.");
+        }
+      );
+    }
+
+    function ensureActiveRoom(){
+      const rk = roomKey();
+      if(!rk) return "";
+      if(rk !== activeRoom) setRoomFromInput();
+      return rk;
     }
 
     function isValidEmail(email){
-      // Practical (not perfect) validation.
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
     }
 
-    function pad2(n){ return String(n).padStart(2,'0'); }
-
-    function slotKeyFromHour(hour){
-      return `${pad2(hour)}:00`;
-    }
+    // ---------- Time labels ----------
+    function pad2(n){ return String(n).padStart(2,"0"); }
+    function slotKeyFromHour(hour){ return `${pad2(hour)}:00`; }
 
     function etLabel(hour){
-      // hour is 0..23 in ET
       const h12 = ((hour + 11) % 12) + 1;
-      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const ampm = hour >= 12 ? "PM" : "AM";
       return `${h12}:00 ${ampm}`;
     }
 
-    function etToLocalLabel(hourEt){
-      // Build a Date that represents the ET wall-clock time on REF_DATE.
-      // We do this by formatting a UTC moment that corresponds to the same instant.
-      // Approach:
-      // 1) Create a Date from the components interpreted as America/New_York.
-      // 2) Convert that instant to user timezone via Intl.
-      // Since JS Date is always stored as UTC internally, we use a helper that derives
-      // the correct instant by using Intl to get the offset.
-      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, 'America/New_York');
-
-      const fmt = new Intl.DateTimeFormat(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: userTz
-      });
-
-      return fmt.format(d);
-    }
-
-    function makeZonedDate(year, month, day, hour, minute, timeZone){
-      // month is 1..12
-      // We want the instant that corresponds to the specified wall-clock time in `timeZone`.
-      // We can get it by:
-      // - Start with a UTC date at the same components.
-      // - Compute the timeZone offset at that instant.
-      // - Adjust.
-      const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+    function makeZonedDate(year, month, day, hour, minute, timeZone, second = 0){
+      const utcGuess = new Date(Date.UTC(year, month-1, day, hour, minute, second));
       const offsetMs = tzOffsetMs(utcGuess, timeZone);
       return new Date(utcGuess.getTime() - offsetMs);
     }
 
     function tzOffsetMs(date, timeZone){
-      // Returns timeZone offset in ms at `date`.
-      // Compare the same instant formatted in the target zone vs UTC.
-      const f = new Intl.DateTimeFormat('en-US', {
+      const f = new Intl.DateTimeFormat("en-US", {
         timeZone,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit",
         hour12: false
       });
       const parts = f.formatToParts(date);
       const get = (t) => Number(parts.find(p => p.type === t).value);
-      const asUTC = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+      const asUTC = Date.UTC(get("year"), get("month")-1, get("day"), get("hour"), get("minute"), get("second"));
       return asUTC - date.getTime();
     }
 
-    function nowIso(){
-      return new Date().toISOString();
+    function etToLocalLabel(hourEt){
+      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, "America/New_York");
+      return new Intl.DateTimeFormat(undefined, {
+        hour:"numeric", minute:"2-digit", hour12:true, timeZone:userTz
+      }).format(d);
     }
 
-    function deadlinePassed(){
-      // Treat as end of day ET on deadline.
-      const cutoff = makeZonedDate(2026, 5, 15, 23, 59, 'America/New_York');
-      return new Date() > cutoff;
+    function isSchedulingClosed(){
+      return Date.now() >= SCHEDULE_CLOSE_ET.getTime();
     }
 
+    function updateScheduleStatus(){
+      scheduleClosed = isSchedulingClosed();
+      elSchedulePill.textContent = scheduleClosed ? "Scheduling closed" : "Scheduling open";
+      elScheduleDot.style.background = scheduleClosed ? "var(--bad)" : "var(--good)";
+
+      [elSaveBtn, elClearMeBtn].forEach((btn) => {
+        btn.classList.toggle("isDisabled", scheduleClosed);
+        btn.setAttribute("aria-disabled", scheduleClosed ? "true" : "false");
+      });
+
+      renderSlots();
+    }
+
+    // ---------- Counts / common slots ----------
     function computeCounts(){
-      // Returns { slotKey: count } and memberCount
-      const members = Object.values(store.members);
+      const members = Object.values(roomMembers);
       const counts = {};
-      for(const hour of SLOT_START_HOURS_ET){
-        counts[slotKeyFromHour(hour)] = 0;
-      }
+      SLOT_START_HOURS_ET.forEach(h => counts[slotKeyFromHour(h)] = 0);
+
       for(const m of members){
         if(!Array.isArray(m.slots)) continue;
         for(const s of m.slots){
@@ -597,58 +703,38 @@
       return { counts, memberCount: members.length };
     }
 
-    function allSelectedSlotKeys(){
-      return SLOT_START_HOURS_ET.map(slotKeyFromHour);
-    }
-
     function commonSlots(){
       const { counts, memberCount } = computeCounts();
       if(memberCount === 0) return new Set();
       const common = new Set();
-      for(const k of allSelectedSlotKeys()){
+      for(const k of Object.keys(counts)){
         if(counts[k] === memberCount) common.add(k);
       }
       return common;
     }
 
-    // -----------------------------
-    // Rendering
-    // -----------------------------
-    function renderHeader(){
-      elTzPill.textContent = `Your time zone: ${userTz}`;
-
-      if(deadlinePassed()){
-        elStatusNote.innerHTML = `<span style="color:var(--bad); font-weight:800">Scheduling closed</span><br/><span style="color:var(--muted); font-size:12px">Deadline was May 15, 2026 (ET)</span>`;
-      }else{
-        elStatusNote.innerHTML = `<span style="color:var(--good); font-weight:800">Scheduling open</span><br/><span style="color:var(--muted); font-size:12px">Ends May 15, 2026 (ET)</span>`;
-      }
-
-      const { memberCount } = computeCounts();
-      elMemberCount.textContent = memberCount;
-    }
-
+    // ---------- Rendering ----------
     function renderSlots(){
-      elSlotGrid.innerHTML = '';
-
+      elSlotGrid.innerHTML = "";
       const { counts, memberCount } = computeCounts();
       const common = commonSlots();
 
       for(const hourEt of SLOT_START_HOURS_ET){
         const key = slotKeyFromHour(hourEt);
-        const slot = document.createElement('button');
-        slot.type = 'button';
-        slot.className = 'slot';
-        slot.dataset.key = key;
-        slot.setAttribute('aria-pressed', userSelections.has(key) ? 'true' : 'false');
 
-        if(userSelections.has(key)) slot.classList.add('selected');
-        if(common.has(key) && memberCount > 0) slot.classList.add('common');
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "slot";
+        if(scheduleClosed) btn.classList.add("isDisabled");
+
+        if(userSelections.has(key)) btn.classList.add("selected");
+        if(common.has(key) && memberCount > 0) btn.classList.add("common");
 
         const local = etToLocalLabel(hourEt);
         const count = counts[key] || 0;
         const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
 
-        slot.innerHTML = `
+        btn.innerHTML = `
           <div class="top">
             <div class="labelEt">${etLabel(hourEt)} ET</div>
             <div class="count">
@@ -656,103 +742,91 @@
               <span class="miniBar" aria-hidden="true"><span style="width:${pct}%"></span></span>
             </div>
           </div>
-          <div class="labelLocal" style="display:${showLocal ? 'block':'none'}">${local} (your time)</div>
-          <div class="labelLocal" style="display:${showLocal ? 'none':'block'}">${etLabel(hourEt)} (ET)</div>
+          <div class="labelLocal" style="display:${showLocal ? "block":"none"}">${local} (your time)</div>
+          <div class="labelLocal" style="display:${showLocal ? "none":"block"}">${etLabel(hourEt)} (ET)</div>
         `;
 
-        slot.addEventListener('click', () => {
-          if(deadlinePassed()){
-            toast('Scheduling is closed.');
-            return;
-          }
+        btn.addEventListener("click", () => {
+          if(scheduleClosed) return toast("Scheduling is closed.");
+          if(!ensureActiveRoom()) return toast("Enter a room code first.");
           toggleSlot(key);
         });
 
-        elSlotGrid.appendChild(slot);
+        elSlotGrid.appendChild(btn);
       }
     }
 
     function renderMembers(){
-      const members = Object.values(store.members)
-        .sort((a,b) => (b.updatedAtISO || '').localeCompare(a.updatedAtISO || ''));
+      const members = Object.values(roomMembers);
+      elMemberCount.textContent = members.length;
 
-      elMembers.innerHTML = '';
+      elMembers.innerHTML = "";
 
-      if(members.length === 0){
-        const empty = document.createElement('div');
-        empty.className = 'memberCard';
-        empty.innerHTML = `
-          <div class="memberTop">
-            <div>
-              <div class="memberName">No submissions yet</div>
-              <div class="memberEmail">Once someone saves their picks, they will appear here.</div>
-            </div>
-          </div>
-          <div class="chips"><span class="chip none">—</span></div>
-        `;
-        elMembers.appendChild(empty);
+      if(!activeRoom){
+        elMembers.innerHTML = `<div class="memberCard"><div class="memberName">Enter a room code to begin</div><div class="memberEmail">Team selections are scoped per room code.</div></div>`;
         return;
       }
 
+      if(!db){
+        elMembers.innerHTML = `<div class="memberCard"><div class="memberName">Firebase not configured</div><div class="memberEmail">Paste your config in index.html to load room data.</div></div>`;
+        return;
+      }
+
+      if(members.length === 0){
+        elMembers.innerHTML = `<div class="memberCard"><div class="memberName">No submissions yet</div><div class="memberEmail">Once someone saves their picks, they’ll appear here.</div></div>`;
+        return;
+      }
+
+      members.sort((a,b) => (b.updatedAt ? b.updatedAt.getTime() : 0) - (a.updatedAt ? a.updatedAt.getTime() : 0));
+
       for(const m of members){
-        const card = document.createElement('div');
-        card.className = 'memberCard';
-
-        const safeName = escapeHtml(m.name || 'Unnamed');
-        const safeEmail = escapeHtml(m.email || '');
-        const safeTz = escapeHtml(m.tz || '');
-
-        const chips = Array.isArray(m.slots) && m.slots.length
-          ? m.slots.slice().sort().map(s => `<span class="chip">${escapeHtml(slotLabelCompact(s))}</span>`).join('')
+        const chips = (m.slots && m.slots.length)
+          ? m.slots.slice().sort().map(s => `<span class="chip">${slotLabelCompact(s)}</span>`).join("")
           : `<span class="chip none">No slots selected</span>`;
 
-        const updated = m.updatedAtISO ? new Date(m.updatedAtISO) : null;
-        const updatedText = updated ? updated.toLocaleString() : '';
+        const updated = m.updatedAt || null;
 
+        const card = document.createElement("div");
+        card.className = "memberCard";
         card.innerHTML = `
           <div class="memberTop">
             <div>
-              <div class="memberName">${safeName}</div>
-              <div class="memberEmail">${safeEmail}</div>
+              <div class="memberName">${escapeHtml(m.name || "Unnamed")}</div>
+              <div class="memberEmail">${escapeHtml(m.email || "")}</div>
             </div>
             <div style="text-align:right">
-              <div style="color:var(--muted); font-size:11px">${safeTz}</div>
-              <div style="color:var(--muted); font-size:11px">${escapeHtml(updatedText)}</div>
+              <div style="color:var(--muted); font-size:11px">${escapeHtml(m.tz || "")}</div>
+              <div style="color:var(--muted); font-size:11px">${escapeHtml(updated ? updated.toLocaleString() : "")}</div>
             </div>
           </div>
           <div class="chips">${chips}</div>
         `;
-
         elMembers.appendChild(card);
       }
     }
 
     function slotLabelCompact(slotKey){
-      // slotKey: "HH:00" ET
       const hour = Number(slotKey.slice(0,2));
       const h12 = ((hour + 11) % 12) + 1;
-      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const ampm = hour >= 12 ? "PM" : "AM";
       return `${h12}${ampm} ET`;
     }
 
     function escapeHtml(str){
       return String(str)
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
-        .replaceAll("'",'&#039;');
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
     }
 
     function renderAll(){
-      renderHeader();
       renderSlots();
       renderMembers();
     }
 
-    // -----------------------------
-    // Interaction
-    // -----------------------------
+    // ---------- Interaction ----------
     function toggleSlot(key){
       if(userSelections.has(key)) userSelections.delete(key);
       else userSelections.add(key);
@@ -760,111 +834,169 @@
       autoSaveIfIdentified();
     }
 
-    function loadMySelectionsFromStore(emailLower){
-      const me = store.members[emailLower];
-      userSelections = new Set(Array.isArray(me?.slots) ? me.slots : []);
-    }
-
     function autoSaveIfIdentified(){
-      const email = elEmail.value.trim().toLowerCase();
+      if(scheduleClosed || !db) return;
+      const rk = roomKey();
       const name = elName.value.trim();
-      if(!name || !isValidEmail(email)) return;
-      saveMe(false);
+      const email = elEmail.value.trim().toLowerCase();
+      if(!rk || !name || !isValidEmail(email)) return;
+      if(rk !== activeRoom) setRoomFromInput();
+      void saveMe(false);
     }
 
-    function saveMe(showToast=true){
-      if(deadlinePassed()){
-        toast('Scheduling is closed.');
-        return;
-      }
+    async function saveMe(showToast=true){
+      if(scheduleClosed) return toast("Scheduling is closed.");
+      const rk = ensureActiveRoom();
       const name = elName.value.trim();
       const email = elEmail.value.trim().toLowerCase();
 
-      if(!name){ toast('Please enter your name.'); return; }
-      if(!isValidEmail(email)){ toast('Please enter a valid email.'); return; }
+      if(!rk) return toast("Please enter a room code.");
+      if(!name) return toast("Please enter your name.");
+      if(!isValidEmail(email)) return toast("Please enter a valid email.");
+      if(!ensureDb()) return;
 
-      store.members[email] = {
+      const payload = {
         name,
         email,
         tz: userTz,
         slots: Array.from(userSelections),
-        updatedAtISO: nowIso()
+        updatedAt: serverTimestamp()
       };
 
-      saveStore();
-      if(showToast) toast('Saved.');
-      renderAll();
+      try{
+        await setDoc(doc(db, "rooms", rk, "members", email), payload, { merge: true });
+        if(showToast) toast("Saved.");
+      }catch(err){
+        console.error(err);
+        toast("Save failed.");
+      }
     }
 
-    function clearMyPicks(){
+    async function clearMyPicks(){
+      if(scheduleClosed) return toast("Scheduling is closed.");
+      const rk = ensureActiveRoom();
+      const name = elName.value.trim();
+      const email = elEmail.value.trim().toLowerCase();
+
+      if(!rk) return toast("Please enter a room code.");
+      if(!name) return toast("Please enter your name.");
+      if(!isValidEmail(email)) return toast("Please enter a valid email.");
+      if(!ensureDb()) return;
+
       userSelections = new Set();
       renderSlots();
-      autoSaveIfIdentified();
-    }
 
-    function clearAll(){
-      if(!confirm('Clear ALL saved team selections from this browser?')) return;
-      store = { members: {} };
-      saveStore();
-      userSelections = new Set();
-      renderAll();
-      toast('Cleared.');
+      const payload = {
+        name,
+        email,
+        tz: userTz,
+        slots: [],
+        updatedAt: serverTimestamp()
+      };
+
+      try{
+        await setDoc(doc(db, "rooms", rk, "members", email), payload, { merge: true });
+        toast("Cleared your picks.");
+      }catch(err){
+        console.error(err);
+        toast("Clear failed.");
+      }
     }
 
     function exportJson(){
-      const blob = new Blob([JSON.stringify(store, null, 2)], {type:'application/json'});
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code first.");
+      if(!ensureDb()) return;
+
+      const members = {};
+      for(const [email, m] of Object.entries(roomMembers)){
+        members[email] = {
+          name: m.name || "",
+          email: m.email || email,
+          tz: m.tz || "",
+          slots: Array.isArray(m.slots) ? m.slots : [],
+          updatedAt: m.updatedAt ? m.updatedAt.toISOString() : null
+        };
+      }
+
+      const payload = {
+        room: rk,
+        exportedAt: new Date().toISOString(),
+        members
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `team-schedule-${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `team-schedule-${rk}-${new Date().toISOString().slice(0,10)}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast('Exported.');
+      toast("Exported.");
     }
 
     function toggleLocal(){
       showLocal = !showLocal;
-      elToggleLocal.textContent = showLocal ? 'Your local time' : 'Eastern Time';
+      elToggleLocal.textContent = showLocal ? "Your local time" : "Eastern Time";
       renderSlots();
     }
 
-    // If user enters an email matching a stored member, prefill.
-    function maybePrefill(){
+    function syncFromSnapshot(){
       const email = elEmail.value.trim().toLowerCase();
       if(!isValidEmail(email)) return;
-      const me = store.members[email];
+
+      const me = roomMembers[email];
       if(!me) return;
-      if(!elName.value.trim()) elName.value = me.name || '';
-      loadMySelectionsFromStore(email);
-      renderSlots();
+
+      if(!elName.value.trim()) elName.value = me.name || "";
+      userSelections = new Set(Array.isArray(me.slots) ? me.slots : []);
     }
 
-    // -----------------------------
-    // Wire up
-    // -----------------------------
-    elSaveBtn.addEventListener('click', () => saveMe(true));
-    elClearMeBtn.addEventListener('click', () => { clearMyPicks(); toast('Cleared your picks.'); });
-    elClearAllBtn.addEventListener('click', clearAll);
-    elExportBtn.addEventListener('click', exportJson);
-    elToggleLocal.addEventListener('click', toggleLocal);
+    function maybePrefill(){
+      if(!activeRoom) return;
+      syncFromSnapshot();
+      renderAll();
+    }
 
-    elEmail.addEventListener('blur', maybePrefill);
-    elEmail.addEventListener('keydown', (e) => { if(e.key === 'Enter') maybePrefill(); });
+    function onRoomInput(){
+      clearTimeout(roomDebounce);
+      roomDebounce = setTimeout(setRoomFromInput, 250);
+    }
 
-    // Live autosave as user types (once valid)
-    elName.addEventListener('input', () => autoSaveIfIdentified());
-    elEmail.addEventListener('input', () => autoSaveIfIdentified());
+    function onRoomCommit(){
+      clearTimeout(roomDebounce);
+      setRoomFromInput();
+    }
 
-    // Initial render
-    renderAll();
+    // ---------- Wiring ----------
+    elSaveBtn.addEventListener("click", () => void saveMe(true));
+    elClearMeBtn.addEventListener("click", () => void clearMyPicks());
+    elExportBtn.addEventListener("click", exportJson);
+    elToggleLocal.addEventListener("click", toggleLocal);
+    elThemeBtn.addEventListener("click", toggleTheme);
+    elCopyRoomBtn.addEventListener("click", copyRoomCode);
 
-    // Gentle reminder about local-only persistence
-    (function(){
-      setTimeout(() => toast('Tip: saved to this browser only.'), 900);
+    elRoom.addEventListener("input", onRoomInput);
+    elRoom.addEventListener("blur", onRoomCommit);
+    elRoom.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); onRoomCommit(); } });
+
+    elEmail.addEventListener("blur", maybePrefill);
+    elEmail.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); maybePrefill(); } });
+
+    elName.addEventListener("input", autoSaveIfIdentified);
+    elEmail.addEventListener("input", autoSaveIfIdentified);
+
+    // ---------- Init ----------
+    (function init(){
+      initTheme();
+      initFirebase();
+      updateScheduleStatus();
+      setRoomFromInput();
+      renderAll();
+      setInterval(updateScheduleStatus, 60 * 1000);
     })();
-
   </script>
 </body>
 </html>
