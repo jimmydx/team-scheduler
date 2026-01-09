@@ -136,6 +136,19 @@
     .inputRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
     .inputRow input{flex:1;}
     .btnSubtle{padding:9px 10px;font-size:12px;white-space:nowrap;}
+    .authBox{
+      border:1px solid var(--border);
+      background: color-mix(in srgb, var(--panel) 86%, transparent);
+      border-radius:16px;
+      padding:12px;
+      margin-bottom:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .authRow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+    .authTitle{font-weight:700;font-size:13px;}
+    .authSub{color:var(--muted);font-size:12px;}
     label{font-size:12px;color:var(--muted);}
 
     input{
@@ -334,7 +347,7 @@
       </div>
 
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
-        <button id="themeBtn" type="button" style="padding:9px 10px">Toggle theme</button>
+        <button id="themeBtn" type="button" style="padding:9px 10px">Toggle light/dark theme</button>
       </div>
     </header>
 
@@ -349,6 +362,34 @@
         </div>
 
         <div class="panelBody">
+          <div class="authBox">
+            <div class="authRow">
+              <div>
+                <div class="authTitle">Access</div>
+                <div class="authSub" id="authStatus">Not signed in</div>
+              </div>
+              <button id="signOutBtn" class="btnSubtle" type="button" style="display:none">Sign out</button>
+            </div>
+            <div id="authControls">
+              <div class="field">
+                <label for="authEmail">Login email</label>
+                <input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email" />
+              </div>
+              <div class="field">
+                <label for="authPassword">Password</label>
+                <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
+              </div>
+              <div class="row" style="justify-content:flex-start">
+                <button id="signInBtn" type="button">Sign in</button>
+                <button id="signUpBtn" type="button">Create account</button>
+                <button id="emailLinkBtn" type="button">Email link</button>
+                <button id="googleBtn" type="button">Google sign-in</button>
+              </div>
+              <div class="hint">Passwordless: enter your email, then click Email link.</div>
+            </div>
+            <div class="hint">Sign in to view and save room selections.</div>
+          </div>
+
           <div class="field">
             <label for="room">Room code / Team name</label>
             <div class="inputRow">
@@ -366,7 +407,7 @@
           <div class="field">
             <label for="email">Email</label>
             <input id="email" placeholder="e.g., alex@company.com" autocomplete="email" inputmode="email" />
-            <div class="hint">Saved to this room via Firebase Firestore (shared across devices).</div>
+            <div class="hint">Your sign-in email is used when available.</div>
           </div>
 
           <div class="row" style="margin-top:14px">
@@ -427,6 +468,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
     import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -440,6 +482,7 @@
     };
 
     const THEME_KEY = "teamScheduler_theme";
+    const EMAIL_LINK_KEY = "teamScheduler_emailLink";
 
     // 1-hour slots starting in ET, 9..16 inclusive
     const SLOT_START_HOURS_ET = Array.from({length: 8}, (_, i) => 9 + i);
@@ -462,6 +505,15 @@
     const elToggleLocal = document.getElementById("toggleLocal");
     const elThemeBtn = document.getElementById("themeBtn");
     const elCopyRoomBtn = document.getElementById("copyRoomBtn");
+    const elAuthEmail = document.getElementById("authEmail");
+    const elAuthPassword = document.getElementById("authPassword");
+    const elSignInBtn = document.getElementById("signInBtn");
+    const elSignUpBtn = document.getElementById("signUpBtn");
+    const elEmailLinkBtn = document.getElementById("emailLinkBtn");
+    const elGoogleBtn = document.getElementById("googleBtn");
+    const elSignOutBtn = document.getElementById("signOutBtn");
+    const elAuthStatus = document.getElementById("authStatus");
+    const elAuthControls = document.getElementById("authControls");
 
     const elToast = document.getElementById("toast");
     const elToastMsg = document.getElementById("toastMsg");
@@ -475,6 +527,9 @@
     let roomMembers = {};
     let roomUnsub = null;
     let scheduleClosed = false;
+    let app = null;
+    let auth = null;
+    let authUser = null;
     let db = null;
     let roomDebounce = null;
 
@@ -548,8 +603,10 @@
     function initFirebase(){
       try{
         if(!firebaseConfig || !firebaseConfig.apiKey) throw new Error("Missing Firebase config");
-        const app = initializeApp(firebaseConfig);
+        app = initializeApp(firebaseConfig);
         db = getFirestore(app);
+        auth = getAuth(app);
+        initAuth();
       }catch(err){
         console.warn("Firebase init failed. Paste your config in index.html.", err);
       }
@@ -559,6 +616,172 @@
       if(db) return true;
       if(showToast) toast("Add Firebase config first.");
       return false;
+    }
+
+    function ensureAuth(showToast=true){
+      if(authUser) return true;
+      if(showToast) toast("Sign in to access this room.");
+      return false;
+    }
+
+    function initAuth(){
+      if(!auth) return;
+      onAuthStateChanged(auth, (user) => {
+        authUser = user || null;
+        updateAuthUI();
+
+        if(authUser && authUser.email){
+          elEmail.value = authUser.email.toLowerCase();
+          elEmail.readOnly = true;
+        }else{
+          elEmail.readOnly = false;
+        }
+
+        if(authUser && authUser.displayName && !elName.value.trim()){
+          elName.value = authUser.displayName;
+        }
+
+        if(!authUser && roomUnsub){
+          roomUnsub();
+          roomUnsub = null;
+        }
+
+        if(!authUser){
+          roomMembers = {};
+          userSelections = new Set();
+        }
+
+        setRoomFromInput();
+        updateActionState();
+        renderAll();
+      });
+    }
+
+    function updateAuthUI(){
+      if(authUser){
+        elAuthStatus.textContent = `Signed in as ${authUser.email || "user"}`;
+        if(authUser.email) elAuthEmail.value = authUser.email;
+        elAuthPassword.value = "";
+        elAuthControls.style.display = "none";
+        elSignOutBtn.style.display = "inline-flex";
+      }else{
+        elAuthStatus.textContent = "Not signed in";
+        elAuthControls.style.display = "block";
+        elSignOutBtn.style.display = "none";
+      }
+    }
+
+    function authErrorMessage(err){
+      const code = err && err.code ? err.code : "";
+      const map = {
+        "auth/invalid-email": "Enter a valid email address.",
+        "auth/user-not-found": "No account found. Use Create account.",
+        "auth/wrong-password": "Incorrect password.",
+        "auth/email-already-in-use": "Email already in use. Try Sign in.",
+        "auth/weak-password": "Password should be at least 6 characters.",
+        "auth/popup-closed-by-user": "Popup closed.",
+        "auth/unauthorized-domain": "Add this domain to Firebase Auth settings.",
+        "auth/operation-not-allowed": "Enable this sign-in method in Firebase Auth.",
+        "auth/invalid-action-code": "Invalid or expired email link.",
+        "auth/expired-action-code": "Email link expired. Request a new one.",
+        "auth/invalid-continue-uri": "Invalid sign-in link URL. Check authorized domains."
+      };
+      return map[code] || "Authentication failed.";
+    }
+
+    async function signInEmail(){
+      if(!auth) return toast("Add Firebase config first.");
+      const email = elAuthEmail.value.trim();
+      const password = elAuthPassword.value;
+      if(!email || !password) return toast("Enter email and password.");
+      try{
+        await signInWithEmailAndPassword(auth, email, password);
+        elAuthPassword.value = "";
+        toast("Signed in.");
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
+    }
+
+    async function signUpEmail(){
+      if(!auth) return toast("Add Firebase config first.");
+      const email = elAuthEmail.value.trim();
+      const password = elAuthPassword.value;
+      if(!email || !password) return toast("Enter email and password.");
+      try{
+        await createUserWithEmailAndPassword(auth, email, password);
+        elAuthPassword.value = "";
+        toast("Account created.");
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
+    }
+
+    function getActionUrl(){
+      if(window.location.protocol === "file:" || window.location.origin === "null") return "";
+      return `${window.location.origin}${window.location.pathname}`;
+    }
+
+    async function sendEmailLink(){
+      if(!auth) return toast("Add Firebase config first.");
+      const email = elAuthEmail.value.trim();
+      if(!email) return toast("Enter your email first.");
+
+      const actionUrl = getActionUrl();
+      if(!actionUrl) return toast("Email link requires a hosted URL (not file://).");
+
+      try{
+        await sendSignInLinkToEmail(auth, email, {
+          url: actionUrl,
+          handleCodeInApp: true
+        });
+        localStorage.setItem(EMAIL_LINK_KEY, email);
+        toast("Email link sent. Check your inbox.");
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
+    }
+
+    async function handleEmailLinkSignIn(){
+      if(!auth || !isSignInWithEmailLink(auth, window.location.href)) return;
+      let email = localStorage.getItem(EMAIL_LINK_KEY) || elAuthEmail.value.trim();
+      if(!email){
+        email = window.prompt("Confirm your email to finish sign-in") || "";
+      }
+      if(!email) return toast("Email required to finish sign-in.");
+
+      try{
+        await signInWithEmailLink(auth, email, window.location.href);
+        localStorage.removeItem(EMAIL_LINK_KEY);
+        toast("Signed in.");
+        if(window.history && window.history.replaceState){
+          const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
+    }
+
+    async function signInGoogle(){
+      if(!auth) return toast("Add Firebase config first.");
+      try{
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        toast("Signed in.");
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
+    }
+
+    async function signOutUser(){
+      if(!auth) return;
+      try{
+        await signOut(auth);
+        toast("Signed out.");
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
     }
 
     // ---------- Room handling ----------
@@ -577,21 +800,22 @@
     function setRoomFromInput(){
       const normalized = roomKey();
       if(normalized !== elRoom.value) elRoom.value = normalized;
-      if(normalized === activeRoom) return;
+      const needsResubscribe = normalized !== activeRoom || !roomUnsub;
+      if(!needsResubscribe) return;
 
       activeRoom = normalized;
-      roomMembers = {};
-      userSelections = new Set();
 
       if(roomUnsub){
         roomUnsub();
         roomUnsub = null;
       }
 
+      roomMembers = {};
+      userSelections = new Set();
       renderAll();
 
       if(!activeRoom) return;
-      if(!ensureDb(false)) return;
+      if(!ensureDb(false) || !ensureAuth(false)) return;
 
       roomUnsub = onSnapshot(
         collection(db, "rooms", activeRoom, "members"),
@@ -629,6 +853,11 @@
       if(!rk) return "";
       if(rk !== activeRoom) setRoomFromInput();
       return rk;
+    }
+
+    function getUserEmail(){
+      if(authUser && authUser.email) return authUser.email.toLowerCase();
+      return elEmail.value.trim().toLowerCase();
     }
 
     function isValidEmail(email){
@@ -675,16 +904,24 @@
       return Date.now() >= SCHEDULE_CLOSE_ET.getTime();
     }
 
+    function isInteractionLocked(){
+      return scheduleClosed || !authUser;
+    }
+
     function updateScheduleStatus(){
       scheduleClosed = isSchedulingClosed();
       elSchedulePill.textContent = scheduleClosed ? "Scheduling closed" : "Scheduling open";
       elScheduleDot.style.background = scheduleClosed ? "var(--bad)" : "var(--good)";
+      updateActionState();
+    }
 
+    function updateActionState(){
+      const disabled = isInteractionLocked();
       [elSaveBtn, elClearMeBtn].forEach((btn) => {
-        btn.classList.toggle("isDisabled", scheduleClosed);
-        btn.setAttribute("aria-disabled", scheduleClosed ? "true" : "false");
+        btn.classList.toggle("isDisabled", disabled);
+        btn.disabled = disabled;
+        btn.setAttribute("aria-disabled", disabled ? "true" : "false");
       });
-
       renderSlots();
     }
 
@@ -718,6 +955,7 @@
       elSlotGrid.innerHTML = "";
       const { counts, memberCount } = computeCounts();
       const common = commonSlots();
+      const locked = isInteractionLocked();
 
       for(const hourEt of SLOT_START_HOURS_ET){
         const key = slotKeyFromHour(hourEt);
@@ -725,7 +963,10 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "slot";
-        if(scheduleClosed) btn.classList.add("isDisabled");
+        if(locked){
+          btn.classList.add("isDisabled");
+          btn.disabled = true;
+        }
 
         if(userSelections.has(key)) btn.classList.add("selected");
         if(common.has(key) && memberCount > 0) btn.classList.add("common");
@@ -747,7 +988,7 @@
         `;
 
         btn.addEventListener("click", () => {
-          if(scheduleClosed) return toast("Scheduling is closed.");
+          if(isInteractionLocked()) return toast(scheduleClosed ? "Scheduling is closed." : "Sign in to continue.");
           if(!ensureActiveRoom()) return toast("Enter a room code first.");
           toggleSlot(key);
         });
@@ -764,6 +1005,11 @@
 
       if(!activeRoom){
         elMembers.innerHTML = `<div class="memberCard"><div class="memberName">Enter a room code to begin</div><div class="memberEmail">Team selections are scoped per room code.</div></div>`;
+        return;
+      }
+
+      if(!authUser){
+        elMembers.innerHTML = `<div class="memberCard"><div class="memberName">Sign in required</div><div class="memberEmail">Sign in to view and save room data.</div></div>`;
         return;
       }
 
@@ -835,10 +1081,10 @@
     }
 
     function autoSaveIfIdentified(){
-      if(scheduleClosed || !db) return;
+      if(scheduleClosed || !db || !authUser) return;
       const rk = roomKey();
       const name = elName.value.trim();
-      const email = elEmail.value.trim().toLowerCase();
+      const email = getUserEmail();
       if(!rk || !name || !isValidEmail(email)) return;
       if(rk !== activeRoom) setRoomFromInput();
       void saveMe(false);
@@ -848,12 +1094,13 @@
       if(scheduleClosed) return toast("Scheduling is closed.");
       const rk = ensureActiveRoom();
       const name = elName.value.trim();
-      const email = elEmail.value.trim().toLowerCase();
+      const email = getUserEmail();
 
       if(!rk) return toast("Please enter a room code.");
       if(!name) return toast("Please enter your name.");
       if(!isValidEmail(email)) return toast("Please enter a valid email.");
       if(!ensureDb()) return;
+      if(!ensureAuth()) return;
 
       const payload = {
         name,
@@ -876,12 +1123,13 @@
       if(scheduleClosed) return toast("Scheduling is closed.");
       const rk = ensureActiveRoom();
       const name = elName.value.trim();
-      const email = elEmail.value.trim().toLowerCase();
+      const email = getUserEmail();
 
       if(!rk) return toast("Please enter a room code.");
       if(!name) return toast("Please enter your name.");
       if(!isValidEmail(email)) return toast("Please enter a valid email.");
       if(!ensureDb()) return;
+      if(!ensureAuth()) return;
 
       userSelections = new Set();
       renderSlots();
@@ -907,6 +1155,7 @@
       const rk = ensureActiveRoom();
       if(!rk) return toast("Enter a room code first.");
       if(!ensureDb()) return;
+      if(!ensureAuth()) return;
 
       const members = {};
       for(const [email, m] of Object.entries(roomMembers)){
@@ -944,7 +1193,8 @@
     }
 
     function syncFromSnapshot(){
-      const email = elEmail.value.trim().toLowerCase();
+      if(!authUser) return;
+      const email = getUserEmail();
       if(!isValidEmail(email)) return;
 
       const me = roomMembers[email];
@@ -977,6 +1227,11 @@
     elToggleLocal.addEventListener("click", toggleLocal);
     elThemeBtn.addEventListener("click", toggleTheme);
     elCopyRoomBtn.addEventListener("click", copyRoomCode);
+    elSignInBtn.addEventListener("click", () => void signInEmail());
+    elSignUpBtn.addEventListener("click", () => void signUpEmail());
+    elEmailLinkBtn.addEventListener("click", () => void sendEmailLink());
+    elGoogleBtn.addEventListener("click", () => void signInGoogle());
+    elSignOutBtn.addEventListener("click", () => void signOutUser());
 
     elRoom.addEventListener("input", onRoomInput);
     elRoom.addEventListener("blur", onRoomCommit);
@@ -987,11 +1242,18 @@
 
     elName.addEventListener("input", autoSaveIfIdentified);
     elEmail.addEventListener("input", autoSaveIfIdentified);
+    elAuthPassword.addEventListener("keydown", (e) => {
+      if(e.key === "Enter"){
+        e.preventDefault();
+        void signInEmail();
+      }
+    });
 
     // ---------- Init ----------
     (function init(){
       initTheme();
       initFirebase();
+      handleEmailLinkSignIn();
       updateScheduleStatus();
       setRoomFromInput();
       renderAll();
