@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Team Scheduling Tool</title>
+  <title>Team Scheduler</title>
+  <link rel="icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/TS-icon-32x32.png?v=1" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/TS-icon-32x32.png?v=1" />
+  <link rel="shortcut icon" href="assets/TS-icon-32x32.png?v=1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/TS-icon-1024x1024.png" />
 
   <style>
     /* Theme tokens
@@ -81,6 +86,15 @@
       justify-content:space-between;
       margin-bottom:18px;
     }
+    .brand{display:flex;flex-direction:column;gap:10px;align-items:flex-start;}
+    .brandTop{display:flex;gap:14px;align-items:center;}
+    .brandLogo{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      object-fit:cover;
+      box-shadow:var(--shadow);
+    }
 
     h1{
       margin:0;
@@ -106,10 +120,11 @@
 
     .grid{
       display:grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 360px 1fr;
       gap:14px;
     }
     @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
+    .leftStack{display:grid;gap:14px;}
 
     .panel{
       background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 92%, transparent), color-mix(in srgb, var(--panel2) 88%, transparent));
@@ -135,6 +150,9 @@
     .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
     .inputRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
     .inputRow input{flex:1;}
+    .dateRow{gap:10px;}
+    .dateRow input{min-width:140px;}
+    .dateSep{color:var(--muted);font-size:12px;white-space:nowrap;}
     .btnSubtle{padding:9px 10px;font-size:12px;white-space:nowrap;}
     .authBox{
       border:1px solid var(--border);
@@ -181,13 +199,23 @@
 
     .dayChoices,
     .dayTabs{display:flex;gap:8px;flex-wrap:wrap;}
+    .dayRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .dayTabs{flex:1;}
+    .commentsToggle{margin-left:auto;white-space:nowrap;}
+    .dayChoices{
+      flex-wrap:nowrap;
+      gap:6px;
+      overflow-x:auto;
+      padding-bottom:4px;
+      scrollbar-width:thin;
+    }
     .dayChoice,
     .dayTab{
       border:1px solid color-mix(in srgb, var(--border) 85%, transparent);
       background: var(--slotBg);
       border-radius:999px;
-      padding:8px 10px;
-      font-size:12px;
+      padding:6px 9px;
+      font-size:11px;
       font-weight:600;
       letter-spacing:-.01em;
       cursor:pointer;
@@ -197,16 +225,58 @@
       border-color:color-mix(in srgb, var(--accent) 60%, transparent);
       background: var(--slotBgHover);
     }
+    .dayTab.hasSelections:not(.active){
+      border-color:color-mix(in srgb, var(--good) 60%, transparent);
+      background: color-mix(in srgb, var(--good) 12%, transparent);
+    }
+
+    .topSlots{
+      margin-top:16px;
+      padding:12px;
+      border-top:1px dashed color-mix(in srgb, var(--border) 65%, transparent);
+      display:grid;
+      gap:10px;
+    }
+    .topSlotsTitle{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .topSlotsList{display:grid;gap:8px;}
+    .topSlot{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: var(--slotBg);
+    }
+    .topSlotLabel{font-weight:700;font-size:12px;}
+    .topSlotStar{margin-left:6px;color:var(--accent);font-weight:900;}
+    .topSlotMeta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;}
+    .topSlot .miniBar{width:64px;}
+    .topSlotDetails{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1;}
+    .topSlotMissing{
+      color:var(--muted);
+      font-size:11px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .topSlotEmpty{color:var(--muted);font-size:12px;padding:6px 2px;}
 
     .daySwitch{padding:10px 14px 0; display:flex; flex-direction:column; gap:10px;}
     .daySelect{display:none;}
-    @media (max-width: 640px){
-      .dayTabs{display:none;}
-      .daySelect{display:block;}
-    }
+    .timeModeNote{padding:2px 14px 0;margin-top:12px;color:var(--accent);font-weight:700;font-size:12px;}
+    .commentsPanel{padding:14px 14px 16px;}
+    .memberComment{font-size:12px;color:var(--muted);}
     label{font-size:12px;color:var(--muted);}
 
-    input{
+    input,
+    textarea{
       width:100%;
       padding:11px 12px;
       border-radius:14px;
@@ -217,10 +287,15 @@
       transition:.15s;
     }
 
-    input:focus{
+    textarea{min-height:140px;resize:vertical;}
+
+    input:focus,
+    textarea:focus{
       border-color:color-mix(in srgb, var(--accent) 70%, transparent);
       box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
     }
+
+    #room{color:var(--accent);}
 
     select{
       width:100%;
@@ -277,7 +352,7 @@
     .slotGrid{
       padding:14px 14px 16px;
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap:10px;
     }
     @media (max-width: 560px){ .slotGrid{grid-template-columns: repeat(2, minmax(0, 1fr));} }
@@ -315,11 +390,12 @@
     }
 
     .slot .top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-    .slot .labelEt{font-weight:800;font-size:13px;}
+    .slot .labelEt{font-weight:800;font-size:13px;white-space:nowrap;}
     .slot .labelLocal{font-family:var(--mono);font-size:11px;color:var(--muted);}
+    .slot .labelLocal + .labelLocal{margin-top:2px;}
 
     .count{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap;}
-    .miniBar{width:46px;height:6px;border-radius:999px;background: color-mix(in srgb, var(--border) 70%, transparent);overflow:hidden;}
+    .miniBar{width:40px;height:6px;border-radius:999px;background: color-mix(in srgb, var(--border) 70%, transparent);overflow:hidden;}
     .miniBar > span{display:block;height:100%;width:0;background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 85%, transparent), color-mix(in srgb, var(--accent2) 85%, transparent));}
 
     .legend{
@@ -418,16 +494,24 @@
       backdrop-filter: blur(10px);
     }
     .cursorHint.show{display:block;}
+
+    .authDebugFoot{
+      text-align:right;
+      margin-top:12px;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
     <header>
-      <div>
-        <h1>Team Scheduling</h1>
+      <div class="brand">
+        <div class="brandTop">
+          <img src="assets/TS-icon-1024x1024.png" alt="Team Scheduler logo" class="brandLogo" width="54" height="54" />
+          <h1>Team Scheduler</h1>
+        </div>
         <div class="subtitle">
-          Select your preferred 1-hour meeting slots. The team list updates as people submit.
+          Sign in, enter a room code, and select your available time slots to coordinate a weekly meeting time. The team availability list updates as people submit.
         </div>
 
         <div class="badgeRow">
@@ -441,107 +525,136 @@
     </header>
 
     <div class="grid">
-      <!-- Identity -->
-      <section class="panel">
-        <div class="panelHead">
-          <div>
-            <h2>User info</h2>
-            <p>Selections are scoped by room code.</p>
+      <div class="leftStack">
+        <section class="panel">
+          <div class="panelHead">
+            <div>
+              <h2>User info</h2>
+              <p>Sign in to view and save room selections.</p>
+            </div>
           </div>
-        </div>
 
-        <div class="panelBody">
-          <div class="authBox">
-            <div class="authRow">
-              <div>
-                <div class="authTitle">Access</div>
-                <div class="authSub" id="authStatus">Not signed in</div>
-              </div>
-              <button id="signOutBtn" class="btnSubtle" type="button" style="display:none">Sign out</button>
-            </div>
-            <div id="authControls">
-              <div class="authTop">
-                <button id="googleBtn" class="authPrimary" type="button">Google sign-in</button>
-              </div>
-              <div class="authDivider"><span>or</span></div>
-              <div class="authActions">
-                <button id="signInBtn" type="button" aria-expanded="false">Sign in</button>
-                <button id="signUpBtn" type="button" aria-expanded="false">Create account</button>
-                <button id="emailLinkBtn" type="button" aria-expanded="false">Email link</button>
-              </div>
-              <div id="authFields" class="authFields" aria-live="polite">
-                <div class="field" id="authEmailField">
-                  <label for="authEmail">Login email</label>
-                  <input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email" />
+          <div class="panelBody">
+            <div class="authBox">
+              <div class="authRow">
+                <div>
+                  <div class="authTitle">Access</div>
+                  <div class="authSub" id="authStatus">Not signed in</div>
                 </div>
-                <div class="field" id="authPasswordField">
-                  <label for="authPassword">Password</label>
-                  <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
-                </div>
-                <div class="row" style="justify-content:flex-start">
-                  <button id="authSubmitBtn" type="button">Continue</button>
-                </div>
-                <div class="hint" id="authHint"></div>
+                <button id="signOutBtn" class="btnSubtle" type="button" style="display:none">Sign out</button>
               </div>
-            </div>
-            <div id="authProfile" class="authProfile" style="display:none">
-              <div class="field">
-                <label for="name">Display name</label>
-                <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
-                <div class="hint">Shown in the team list. Your sign-in email is used automatically.</div>
-              </div>
-              <div class="field">
-                <label for="tzInput">Time zone (IANA)</label>
-                <input id="tzInput" placeholder="e.g., America/New_York" autocomplete="off" list="tzOptions" />
-                <datalist id="tzOptions"></datalist>
-                <div class="hint">Used for local time display and saved with your entry.</div>
-                <div class="row" style="justify-content:flex-start">
-                  <button id="tzResetBtn" class="btnSubtle" type="button">Use device time zone</button>
+              <div id="authControls">
+                <div class="authTop">
+                  <button id="googleBtn" class="authPrimary" type="button">Google sign-in</button>
+                </div>
+                <div class="authDivider"><span>or</span></div>
+                <div class="authActions">
+                  <button id="signInBtn" type="button" aria-expanded="false">Sign in</button>
+                  <button id="signUpBtn" type="button" aria-expanded="false">Create account</button>
+                  <button id="emailLinkBtn" type="button" aria-expanded="false">Email link</button>
+                </div>
+                <div id="authFields" class="authFields" aria-live="polite">
+                  <div class="field" id="authEmailField">
+                    <label for="authEmail">Login email</label>
+                    <input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email" />
+                  </div>
+                  <div class="field" id="authPasswordField">
+                    <label for="authPassword">Password</label>
+                    <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
+                  </div>
+                  <div class="row" style="justify-content:flex-start">
+                    <button id="authSubmitBtn" type="button">Continue</button>
+                  </div>
+                  <div class="hint footnote" id="authHint"></div>
                 </div>
               </div>
-            </div>
-            <div class="hint authNote">Sign in to view and save room selections.</div>
-          </div>
-
-          <div class="field">
-            <label for="room">Room code / Team name</label>
-            <div class="inputRow">
-              <input id="room" placeholder="e.g., physics-lab / team-standup" autocomplete="off" required />
-              <button id="copyRoomBtn" class="btnSubtle" type="button">Copy</button>
-            </div>
-            <div class="hint footnote">(room codes are lowercased; spaces become hyphens.)</div>
-          </div>
-
-          <div class="field">
-            <label>Active days for current room/team:</label>
-            <div class="dayChoices" id="roomDays"></div>
-          </div>
-
-          <div class="field">
-            <label>Room status</label>
-            <div class="row" style="justify-content:flex-start">
-              <div class="pill">
-                <span class="dot" id="roomStatusDot" style="background:var(--good)"></span>
-                <span id="roomStatusLabel">Room open</span>
+              <div id="authProfile" class="authProfile" style="display:none">
+                <div class="field">
+                  <label for="name">Display name</label>
+                  <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
+                  <div class="hint footnote">Shown in the team list.</div>
+                </div>
+                <div class="field">
+                  <label for="tzSelect">Time zone</label>
+                  <select id="tzSelect" class="tzSelect" aria-label="Select time zone"></select>
+                  <div class="hint footnote">Used for local time display and saved with your entry.</div>
+                  <div class="row" style="justify-content:flex-start">
+                    <button id="tzResetBtn" class="btnSubtle" type="button">Use device time zone</button>
+                  </div>
+                </div>
               </div>
-              <button id="roomToggleBtn" type="button">Close room</button>
             </div>
-            <div class="hint roomMeta" id="roomStatusMeta" style="display:none"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panelHead">
+            <div>
+              <h2>Room settings</h2>
+              <p>Selections are scoped by room code.</p>
+            </div>
           </div>
 
-          <div class="row" style="margin-top:14px">
-            <button id="saveBtn" type="button">Save / Update</button>
-            <button id="clearMeBtn" class="btnDanger" type="button">Clear my picks</button>
+          <div class="panelBody">
+            <div class="field">
+              <label for="room">Room code / Team name</label>
+              <div class="inputRow">
+                <input id="room" placeholder="e.g., physics-lab / team-standup" autocomplete="off" required />
+                <button id="loadRoomBtn" class="btnSubtle" type="button">Load</button>
+              </div>
+              <div class="hint footnote">(room codes are lowercased; spaces become hyphens.)</div>
+            </div>
+
+            <div class="field">
+              <label for="roomTzSelect">Room's default time zone</label>
+              <select id="roomTzSelect" class="tzSelect" aria-label="Select room time zone"></select>
+            </div>
+
+            <div class="field">
+              <label>Scheduled dates</label>
+              <div class="inputRow dateRow">
+                <input id="roomDateStart" type="date" />
+                <span class="dateSep">to</span>
+                <input id="roomDateEnd" type="date" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="roomMeetingMinutes">Meeting duration (minutes)</label>
+              <input id="roomMeetingMinutes" type="number" min="1" step="5" />
+            </div>
+
+            <div class="field">
+              <label>Active days for current room/team:</label>
+              <div class="dayChoices" id="roomDays"></div>
+            </div>
+
+            <div class="field">
+              <label>Room status</label>
+              <div class="row" style="justify-content:flex-start">
+                <div class="pill">
+                  <span class="dot" id="roomStatusDot" style="background:var(--good)"></span>
+                  <span id="roomStatusLabel">Room open</span>
+                </div>
+                <button id="roomToggleBtn" type="button">Close room</button>
+              </div>
+              <div class="hint footnote roomMeta" id="roomStatusMeta" style="display:none"></div>
+            </div>
+
+            <div class="row" style="margin-top:14px">
+              <button id="saveBtn" type="button">Save / Update</button>
+              <button id="clearMeBtn" class="btnDanger" type="button">Clear my picks</button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <!-- Slots -->
       <section class="panel">
         <div class="panelHead">
           <div>
-            <h2>Select 1-hour slots: <span id="slotRoomLabel" class="roomTag"></span></h2>
-            <p>Eastern time shown in bold; your local time below.</p>
+            <h2>Select your availability: <span id="slotRoomLabel" class="roomTag"></span></h2>
+            <p id="scheduleSubtitle"></p>
           </div>
           <div style="text-align:right">
             <div style="color:var(--muted); font-size:12px">Members submitted</div>
@@ -550,9 +663,19 @@
         </div>
 
         <div class="daySwitch">
-          <div class="dayTabs" id="dayTabs"></div>
+          <div class="dayRow">
+            <div class="dayTabs" id="dayTabs"></div>
+            <button id="commentsToggle" class="dayTab commentsToggle" type="button" aria-pressed="false">Comments</button>
+          </div>
           <select id="daySelect" class="daySelect" aria-label="Select day"></select>
           <div id="hiddenDaysHint" class="hint dayHint" style="display:none"></div>
+        </div>
+
+        <div id="timeModeNote" class="timeModeNote"></div>
+
+        <div id="commentsPanel" class="commentsPanel" style="display:none">
+          <label for="commentsInput">Comments for this room</label>
+          <textarea id="commentsInput" placeholder="Add notes or scheduling constraints..."></textarea>
         </div>
 
         <div class="slotGrid" id="slotGrid"></div>
@@ -564,8 +687,13 @@
           </div>
           <div class="keyItem" style="gap:10px">
             <span style="color:var(--muted)">Showing times in:</span>
-            <button id="toggleLocal" type="button" style="padding:9px 10px">Your local time (LT)</button>
+            <button id="toggleLocal" type="button" style="padding:9px 10px">Your local time</button>
           </div>
+        </div>
+
+        <div class="topSlots" id="topSlots">
+          <div class="topSlotsTitle">Top 7 most chosen slots</div>
+          <div class="topSlotsList" id="topSlotsList"></div>
         </div>
       </section>
     </div>
@@ -574,21 +702,19 @@
     <section class="panel footerPanel">
       <div class="panelHead">
         <div>
-          <h2>Current team selections (this room)</h2>
-          <p>Watch convergence by finding slots selected by everyone.</p>
+          <h2>Current team selections <span id="roomListLabel" class="roomTag"></span></h2>
+          <p>See who selected each slot and when they last updated.</p>
         </div>
           <div class="row" style="gap:10px">
             <button id="exportBtn" type="button">Export JSON</button>
-            <button id="resetRoomBtn" class="btnDanger" type="button">Reset room</button>
-            <div class="pill" id="resetRoomNote">
-              <span class="dot" style="background:var(--bad)"></span>
-              <span id="resetRoomNoteText">Admin only</span>
-            </div>
+            <button id="resetRoomBtn" class="btnDanger" type="button">Reset room (admin only)</button>
           </div>
       </div>
 
       <div class="members" id="members"></div>
     </section>
+
+    <div class="hint footnote authDebugFoot" id="authDebug" style="display:none"></div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite">
@@ -614,8 +740,14 @@
     const THEME_KEY = "teamScheduler_theme";
     const EMAIL_LINK_KEY = "teamScheduler_emailLink";
 
-    // 1-hour slots starting in ET, 9..16 inclusive
-    const SLOT_START_HOURS_ET = Array.from({length: 8}, (_, i) => 9 + i);
+    // 30-minute slots starting in preferred time zone, 9:00..16:00 inclusive
+    const SLOT_START_MINUTE = 9 * 60;
+    const SLOT_END_MINUTE = 16 * 60;
+    const SLOT_INTERVAL_MINUTES = 30;
+    const SLOT_START_MINUTES = Array.from(
+      {length: Math.floor((SLOT_END_MINUTE - SLOT_START_MINUTE) / SLOT_INTERVAL_MINUTES) + 1},
+      (_, i) => SLOT_START_MINUTE + (i * SLOT_INTERVAL_MINUTES)
+    );
     const DAY_OPTIONS = [
       { id: "mon", short: "Mon", long: "Monday" },
       { id: "tue", short: "Tue", long: "Tuesday" },
@@ -631,18 +763,30 @@
     const SCHEDULE_CLOSE_ET = makeZonedDate(2026, 5, 15, 23, 59, ET_TIMEZONE, 59);
     const DAY_LOOKUP = new Map(DAY_OPTIONS.map(d => [d.id, d]));
     const DAY_ORDER = new Map(DAY_OPTIONS.map((d, i) => [d.id, i]));
-    const SLOT_TIME_SET = new Set(SLOT_START_HOURS_ET.map(h => `${String(h).padStart(2,"0")}:00`));
+    const SLOT_TIME_SET = new Set(SLOT_START_MINUTES.map(minutes => slotKeyFromMinutes(minutes)));
 
     const elRoom = document.getElementById("room");
     const elName = document.getElementById("name");
     const elSlotGrid = document.getElementById("slotGrid");
     const elRoomDays = document.getElementById("roomDays");
+    const elRoomTzSelect = document.getElementById("roomTzSelect");
+    const elRoomDateStart = document.getElementById("roomDateStart");
+    const elRoomDateEnd = document.getElementById("roomDateEnd");
+    const elRoomMeetingMinutes = document.getElementById("roomMeetingMinutes");
     const elDayTabs = document.getElementById("dayTabs");
     const elDaySelect = document.getElementById("daySelect");
     const elHiddenDaysHint = document.getElementById("hiddenDaysHint");
+    const elCommentsToggle = document.getElementById("commentsToggle");
+    const elCommentsPanel = document.getElementById("commentsPanel");
+    const elCommentsInput = document.getElementById("commentsInput");
+    const elTimeModeNote = document.getElementById("timeModeNote");
     const elMembers = document.getElementById("members");
     const elMemberCount = document.getElementById("memberCount");
     const elSlotRoomLabel = document.getElementById("slotRoomLabel");
+    const elRoomListLabel = document.getElementById("roomListLabel");
+    const elTopSlots = document.getElementById("topSlots");
+    const elTopSlotsList = document.getElementById("topSlotsList");
+    const elScheduleSubtitle = document.getElementById("scheduleSubtitle");
     const elTzPill = document.getElementById("tzPill");
     const elRoomStatusDot = document.getElementById("roomStatusDot");
     const elRoomStatusLabel = document.getElementById("roomStatusLabel");
@@ -653,11 +797,9 @@
     const elClearMeBtn = document.getElementById("clearMeBtn");
     const elExportBtn = document.getElementById("exportBtn");
     const elResetRoomBtn = document.getElementById("resetRoomBtn");
-    const elResetRoomNote = document.getElementById("resetRoomNote");
-    const elResetRoomNoteText = document.getElementById("resetRoomNoteText");
     const elToggleLocal = document.getElementById("toggleLocal");
     const elThemeBtn = document.getElementById("themeBtn");
-    const elCopyRoomBtn = document.getElementById("copyRoomBtn");
+    const elLoadRoomBtn = document.getElementById("loadRoomBtn");
     const elAuthEmail = document.getElementById("authEmail");
     const elAuthPassword = document.getElementById("authPassword");
     const elSignInBtn = document.getElementById("signInBtn");
@@ -673,9 +815,9 @@
     const elAuthSubmitBtn = document.getElementById("authSubmitBtn");
     const elAuthHint = document.getElementById("authHint");
     const elAuthProfile = document.getElementById("authProfile");
-    const elTzInput = document.getElementById("tzInput");
+    const elAuthDebug = document.getElementById("authDebug");
+    const elTzSelect = document.getElementById("tzSelect");
     const elTzResetBtn = document.getElementById("tzResetBtn");
-    const elTzOptions = document.getElementById("tzOptions");
 
     const elToast = document.getElementById("toast");
     const elToastMsg = document.getElementById("toastMsg");
@@ -695,6 +837,12 @@
     let roomStatusUpdatedAt = null;
     let roomStatusByName = "";
     let roomStatusByEmail = "";
+    let roomPreferredTz = ET_TIMEZONE;
+    let roomDateStart = "";
+    let roomDateEnd = "";
+    let roomMeetingMinutes = 60;
+    let showComments = false;
+    let commentSaveTimer = null;
     let roomAdmins = [];
     let isAdmin = false;
     let roomUnsub = null;
@@ -735,7 +883,7 @@
     // ---------- Time zone ----------
     function updateTzPill(){
       if(!elTzPill) return;
-      const note = authUser ? "change below" : "sign in to change";
+      const note = authUser ? "change below if needed" : "sign in to change";
       elTzPill.textContent = `Your time zone: ${userTz} (${note})`;
     }
 
@@ -755,6 +903,73 @@
       return "UTC";
     }
 
+    function setSelectValue(selectEl, value){
+      if(!selectEl) return;
+      const next = value || "";
+      if(!next){
+        selectEl.value = "";
+        return;
+      }
+      const existing = Array.from(selectEl.options).some(opt => opt.value === next);
+      if(!existing){
+        const opt = document.createElement("option");
+        opt.value = next;
+        opt.textContent = timeZoneOptionLabel(next);
+        selectEl.prepend(opt);
+      }
+      selectEl.value = next;
+    }
+
+    function formatOffsetLabel(offsetMinutes){
+      const sign = offsetMinutes >= 0 ? "+" : "-";
+      const abs = Math.abs(offsetMinutes);
+      const hours = Math.floor(abs / 60);
+      const minutes = abs % 60;
+      return `GMT${sign}${pad2(hours)}:${pad2(minutes)}`;
+    }
+
+    function timeZoneOptionLabel(timeZone){
+      try{
+        const offsetMinutes = Math.round(tzOffsetMs(new Date(), timeZone) / 60000);
+        return `${formatOffsetLabel(offsetMinutes)} | ${timeZone}`;
+      }catch{
+        return timeZone;
+      }
+    }
+
+    function formatMemberTimeZone(tz){
+      if(!tz) return "";
+      if(!isValidTimeZone(tz)) return tz;
+      return timeZoneOptionLabel(tz);
+    }
+
+    function populateTimeZoneSelect(selectEl, currentTz){
+      if(!selectEl) return;
+      let zones = [];
+      if(typeof Intl.supportedValuesOf === "function"){
+        zones = Intl.supportedValuesOf("timeZone");
+      }
+      if(!zones.length){
+        selectEl.innerHTML = `<option value="${currentTz}">${timeZoneOptionLabel(currentTz)}</option>`;
+        selectEl.value = currentTz;
+        return;
+      }
+      const now = new Date();
+      const sorted = zones
+        .map((zone) => ({
+          zone,
+          offset: Math.round(tzOffsetMs(now, zone) / 60000)
+        }))
+        .sort((a, b) => {
+          if(a.offset !== b.offset) return a.offset - b.offset;
+          return a.zone.localeCompare(b.zone);
+        });
+      selectEl.innerHTML = sorted.map(({ zone }) =>
+        `<option value="${zone}">${timeZoneOptionLabel(zone)}</option>`
+      ).join("");
+      setSelectValue(selectEl, currentTz);
+    }
+
     function setUserTimeZone(nextTz, { save = true, showToast = true } = {}){
       const trimmed = String(nextTz || "").trim();
       const candidate = trimmed || deviceTz;
@@ -764,25 +979,25 @@
       }
       if(candidate === userTz) return true;
       userTz = candidate;
-      if(elTzInput) elTzInput.value = candidate;
+      if(elTzSelect) setSelectValue(elTzSelect, candidate);
       updateTzPill();
+      updateToggleLabel();
       renderSlots();
+      renderMembers();
       if(save) autoSaveIfIdentified();
       return true;
     }
 
     function initTimeZoneOptions(){
-      if(!elTzOptions) return;
-      if(typeof Intl.supportedValuesOf !== "function") return;
-      const zones = Intl.supportedValuesOf("timeZone");
-      elTzOptions.innerHTML = zones.map(zone => `<option value="${zone}"></option>`).join("");
+      populateTimeZoneSelect(elTzSelect, userTz);
+      populateTimeZoneSelect(elRoomTzSelect, roomPreferredTz);
     }
 
-    function commitTimeZoneInput(){
+    function commitTimeZoneSelect(){
       if(!authUser) return toast("Sign in to change time zone.");
-      if(!elTzInput) return;
-      const ok = setUserTimeZone(elTzInput.value, { save: true, showToast: true });
-      if(!ok) elTzInput.value = userTz;
+      if(!elTzSelect) return;
+      const ok = setUserTimeZone(elTzSelect.value, { save: true, showToast: true });
+      if(!ok) elTzSelect.value = userTz;
     }
 
     // ---------- Toast ----------
@@ -820,40 +1035,12 @@
       elCursorHint.classList.remove("show");
     }
 
-    async function copyRoomCode(){
+    function loadRoomFromInput(){
       const rk = roomKey();
       if(!rk) return toast("Enter a room code first.");
       elRoom.value = rk;
       onRoomCommit();
-
-      const ok = await copyToClipboard(rk);
-      toast(ok ? "Room code copied." : "Copy failed.");
-    }
-
-    async function copyToClipboard(text){
-      if(navigator.clipboard && window.isSecureContext){
-        try{
-          await navigator.clipboard.writeText(text);
-          return true;
-        }catch{}
-      }
-      return fallbackCopy(text);
-    }
-
-    function fallbackCopy(text){
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      let ok = false;
-      try{
-        ok = document.execCommand("copy");
-      }catch{}
-      ta.remove();
-      return ok;
+      toast(`Room "${rk}" loaded.`);
     }
 
     // ---------- Firebase ----------
@@ -900,20 +1087,21 @@
           roomDocUnsub = null;
         }
 
-        if(!authUser){
-          roomMembers = {};
-          userSelections = new Set();
-          roomDays = DEFAULT_ROOM_DAYS.slice();
-          roomDaysSet = new Set(roomDays);
-          activeDay = roomDays[0] || "";
-          roomOpen = true;
-          roomStatusUpdatedAt = null;
-          roomStatusByName = "";
-          roomStatusByEmail = "";
-          roomAdmins = [];
-          isAdmin = false;
-          setUserTimeZone(deviceTz, { save: false, showToast: false });
-        }
+      if(!authUser){
+        roomMembers = {};
+        userSelections = new Set();
+        roomDays = DEFAULT_ROOM_DAYS.slice();
+        roomDaysSet = new Set(roomDays);
+        activeDay = roomDays[0] || "";
+        roomOpen = true;
+        roomStatusUpdatedAt = null;
+        roomStatusByName = "";
+        roomStatusByEmail = "";
+        roomAdmins = [];
+        isAdmin = false;
+        setUserTimeZone(deviceTz, { save: false, showToast: false });
+        if(elCommentsInput) elCommentsInput.value = "";
+      }
 
         setRoomFromInput();
         updateActionState();
@@ -930,9 +1118,9 @@
         elSignOutBtn.style.display = "inline-flex";
         elAuthProfile.style.display = "block";
         elName.disabled = false;
-        if(elTzInput){
-          elTzInput.disabled = false;
-          elTzInput.value = userTz;
+        if(elTzSelect){
+          elTzSelect.disabled = false;
+          elTzSelect.value = userTz;
         }
         if(elTzResetBtn) elTzResetBtn.disabled = false;
       }else{
@@ -941,15 +1129,32 @@
         elSignOutBtn.style.display = "none";
         elAuthProfile.style.display = "none";
         elName.disabled = true;
-        if(elTzInput){
-          elTzInput.disabled = true;
-          elTzInput.value = userTz;
+        if(elTzSelect){
+          elTzSelect.disabled = true;
+          elTzSelect.value = userTz;
         }
         if(elTzResetBtn) elTzResetBtn.disabled = true;
         setAuthMode("");
       }
+      updateAuthDebug();
       updateAdminState();
       updateTzPill();
+    }
+
+    function updateAuthDebug(){
+      if(!elAuthDebug) return;
+      if(authUser){
+        const provider = authUser.providerData && authUser.providerData.length
+          ? authUser.providerData[0].providerId
+          : "unknown";
+        const uid = authUser.uid || "unknown";
+        const email = authUser.email || "unknown";
+        const verified = authUser.emailVerified ? "yes" : "no";
+        elAuthDebug.textContent = `Auth ok: ${email} | Provider: ${provider} | UID: ${uid} | Verified: ${verified}`;
+      }else{
+        elAuthDebug.textContent = "Auth: signed out (no Firebase user).";
+      }
+      elAuthDebug.style.display = "block";
     }
 
     function setAuthMode(mode){
@@ -1122,6 +1327,13 @@
       return ordered.length ? ordered : DEFAULT_ROOM_DAYS.slice();
     }
 
+    function normalizeMeetingMinutes(value){
+      const num = Number(value);
+      if(!Number.isFinite(num)) return null;
+      const rounded = Math.round(num);
+      return rounded > 0 ? rounded : null;
+    }
+
     function dayLabelShort(dayId){
       return DAY_LOOKUP.get(dayId)?.short || dayId;
     }
@@ -1130,8 +1342,8 @@
       return DAY_LOOKUP.get(dayId)?.long || dayId;
     }
 
-    function slotKey(dayId, hour){
-      return `${dayId}-${slotKeyFromHour(hour)}`;
+    function slotKey(dayId, minutes){
+      return `${dayId}-${slotKeyFromMinutes(minutes)}`;
     }
 
     function parseSlotKey(slotKey){
@@ -1164,8 +1376,8 @@
     function slotSortValue(slotKey){
       const { dayId, time } = parseSlotKey(slotKey);
       const dayIndex = DAY_ORDER.has(dayId) ? DAY_ORDER.get(dayId) : 99;
-      const hour = Number(time.slice(0,2));
-      return (dayIndex * 100) + (Number.isFinite(hour) ? hour : 0);
+      const minutes = parseTimeString(time);
+      return (dayIndex * 1440) + (Number.isFinite(minutes) ? minutes : 0);
     }
 
     function applyRoomDays(days){
@@ -1178,8 +1390,91 @@
 
     function updateRoomLabel(){
       if(!elSlotRoomLabel) return;
-      const rk = activeRoom || roomKey();
-      elSlotRoomLabel.textContent = rk || "";
+      const rk = activeRoom || "";
+      elSlotRoomLabel.textContent = rk;
+      if(elRoomListLabel) elRoomListLabel.textContent = rk ? `(${rk})` : "";
+    }
+
+    function updateScheduleSubtitle(){
+      if(!elScheduleSubtitle) return;
+      if(!activeRoom || !authUser){
+        elScheduleSubtitle.textContent = "";
+        return;
+      }
+      const range = formatDateRange(roomDateStart, roomDateEnd, roomPreferredTz);
+      elScheduleSubtitle.textContent = range
+        ? `Scheduled period: ${range}`
+        : "Scheduled period: not set.";
+    }
+
+    function updateTimeModeNote(){
+      if(!elTimeModeNote) return;
+      elTimeModeNote.textContent = showLocal
+        ? "Currently showing local time in bold."
+        : "Currently showing room's default time in bold.";
+    }
+
+    function setCommentsView(show){
+      showComments = !!show;
+      if(elCommentsToggle){
+        elCommentsToggle.classList.toggle("active", showComments);
+        elCommentsToggle.setAttribute("aria-pressed", showComments ? "true" : "false");
+      }
+      if(elCommentsPanel) elCommentsPanel.style.display = showComments ? "block" : "none";
+      if(elSlotGrid) elSlotGrid.style.display = showComments ? "none" : "";
+    }
+
+    function updateCommentsUI(){
+      const disabled = isInteractionLocked() || !activeRoom || !db;
+      if(elCommentsInput){
+        elCommentsInput.disabled = disabled;
+        elCommentsInput.setAttribute("aria-disabled", disabled ? "true" : "false");
+      }
+      if(elCommentsToggle){
+        elCommentsToggle.disabled = disabled;
+        elCommentsToggle.classList.toggle("isDisabled", disabled);
+        elCommentsToggle.setAttribute("aria-disabled", disabled ? "true" : "false");
+        if(disabled && showComments) setCommentsView(false);
+      }
+    }
+
+    function updateToggleLabel(){
+      if(!elToggleLocal) return;
+      const localAbbr = timeZoneAbbr(new Date(), safeTimeZone(userTz));
+      const preferredAbbr = timeZoneAbbr(new Date(), safeTimeZone(roomPreferredTz));
+      const localSuffix = localAbbr ? ` (${localAbbr})` : "";
+      const preferredSuffix = preferredAbbr ? ` (${preferredAbbr})` : "";
+      elToggleLocal.textContent = showLocal
+        ? `Your local time${localSuffix}`
+        : `Room's time zone${preferredSuffix}`;
+    }
+
+    function canEditRoomSettings(){
+      return !!authUser && !!activeRoom && !!db && roomOpen;
+    }
+
+    function updateRoomSettingsUI(){
+      const canEdit = canEditRoomSettings();
+      if(elRoomTzSelect){
+        setSelectValue(elRoomTzSelect, roomPreferredTz);
+        elRoomTzSelect.disabled = !canEdit;
+        elRoomTzSelect.setAttribute("aria-disabled", canEdit ? "false" : "true");
+      }
+      if(elRoomDateStart){
+        elRoomDateStart.value = roomDateStart || "";
+        elRoomDateStart.disabled = !canEdit;
+        elRoomDateStart.setAttribute("aria-disabled", canEdit ? "false" : "true");
+      }
+      if(elRoomDateEnd){
+        elRoomDateEnd.value = roomDateEnd || "";
+        elRoomDateEnd.disabled = !canEdit;
+        elRoomDateEnd.setAttribute("aria-disabled", canEdit ? "false" : "true");
+      }
+      if(elRoomMeetingMinutes){
+        elRoomMeetingMinutes.value = roomMeetingMinutes ? String(roomMeetingMinutes) : "";
+        elRoomMeetingMinutes.disabled = !canEdit;
+        elRoomMeetingMinutes.setAttribute("aria-disabled", canEdit ? "false" : "true");
+      }
     }
 
     function updateHiddenDaysHint(){
@@ -1226,18 +1521,24 @@
         roomDocUnsub = null;
       }
 
-      roomMembers = {};
-      userSelections = new Set();
-      roomDays = DEFAULT_ROOM_DAYS.slice();
-      roomDaysSet = new Set(roomDays);
-      activeDay = roomDays[0] || "";
-      roomOpen = true;
-      roomStatusUpdatedAt = null;
-      roomStatusByName = "";
-      roomStatusByEmail = "";
-      roomAdmins = [];
-      isAdmin = false;
-      renderAll();
+          roomMembers = {};
+          userSelections = new Set();
+          roomDays = DEFAULT_ROOM_DAYS.slice();
+          roomDaysSet = new Set(roomDays);
+          activeDay = roomDays[0] || "";
+          roomOpen = true;
+          roomStatusUpdatedAt = null;
+          roomStatusByName = "";
+          roomStatusByEmail = "";
+          roomPreferredTz = ET_TIMEZONE;
+          const defaultDates = getDefaultRoomDates(roomPreferredTz);
+          roomDateStart = defaultDates.start;
+          roomDateEnd = defaultDates.end;
+          roomMeetingMinutes = 60;
+          roomAdmins = [];
+          isAdmin = false;
+          setCommentsView(false);
+          renderAll();
 
       if(!activeRoom) return;
       if(!ensureDb(false) || !ensureAuth(false)) return;
@@ -1246,15 +1547,37 @@
         doc(db, "rooms", activeRoom),
         (docSnap) => {
           const data = docSnap.data() || {};
+          const seedPayload = {};
           if(Array.isArray(data.days)){
             applyRoomDays(data.days);
           }else{
             applyRoomDays(DEFAULT_ROOM_DAYS);
-            if(!roomConfigSeeded){
-              roomConfigSeeded = true;
-              void saveRoomDays(DEFAULT_ROOM_DAYS, false);
-            }
+            seedPayload.days = DEFAULT_ROOM_DAYS;
           }
+
+          const preferredTz = isValidTimeZone(data.preferredTz) ? data.preferredTz : ET_TIMEZONE;
+          roomPreferredTz = preferredTz;
+
+          const hasStart = !!parseDateKey(data.dateStart);
+          const hasEnd = !!parseDateKey(data.dateEnd);
+          const normalizedDates = normalizeRoomDateRange(data.dateStart, data.dateEnd, roomPreferredTz);
+          roomDateStart = normalizedDates.start;
+          roomDateEnd = normalizedDates.end;
+
+          if(!isValidTimeZone(data.preferredTz)) seedPayload.preferredTz = roomPreferredTz;
+          if(!hasStart) seedPayload.dateStart = roomDateStart;
+          if(!hasEnd) seedPayload.dateEnd = roomDateEnd;
+
+          const meetingMinutes = normalizeMeetingMinutes(data.meetingMinutes);
+          roomMeetingMinutes = meetingMinutes || 60;
+          if(!meetingMinutes) seedPayload.meetingMinutes = roomMeetingMinutes;
+
+          if(Object.keys(seedPayload).length && !roomConfigSeeded){
+            roomConfigSeeded = true;
+            seedPayload.updatedAt = serverTimestamp();
+            void setDoc(doc(db, "rooms", activeRoom), seedPayload, { merge: true });
+          }
+
           roomOpen = typeof data.isOpen === "boolean" ? data.isOpen : true;
           roomStatusUpdatedAt = data.statusUpdatedAt && typeof data.statusUpdatedAt.toDate === "function"
             ? data.statusUpdatedAt.toDate()
@@ -1289,6 +1612,7 @@
               email: emailLower,
               tz: data.tz || "",
               slots: Array.isArray(data.slots) ? data.slots : [],
+              comments: typeof data.comments === "string" ? data.comments : "",
               updatedAt
             };
           });
@@ -1322,12 +1646,98 @@
 
     // ---------- Time labels ----------
     function pad2(n){ return String(n).padStart(2,"0"); }
-    function slotKeyFromHour(hour){ return `${pad2(hour)}:00`; }
+    function slotKeyFromMinutes(totalMinutes){
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${pad2(hours)}:${pad2(minutes)}`;
+    }
 
-    function etLabel(hour){
-      const h12 = ((hour + 11) % 12) + 1;
-      const ampm = hour >= 12 ? "PM" : "AM";
-      return `${h12}:00 ${ampm}`;
+    function parseTimeString(timeStr){
+      const match = /^(\d{2}):(\d{2})$/.exec(String(timeStr || ""));
+      if(!match) return null;
+      const hours = Number(match[1]);
+      const minutes = Number(match[2]);
+      if(!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function parseDateKey(dateKey){
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey || ""));
+      if(!match) return null;
+      return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+    }
+
+    function dateKeyFromParts(year, month, day){
+      if(!year || !month || !day) return "";
+      return `${year}-${pad2(month)}-${pad2(day)}`;
+    }
+
+    function dateKeyInZone(date, timeZone){
+      try{
+        const tz = safeTimeZone(timeZone);
+        const fmt = new Intl.DateTimeFormat("en-CA", {
+          timeZone: tz,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        });
+        const parts = fmt.formatToParts(date);
+        const get = (t) => parts.find(p => p.type === t)?.value;
+        return dateKeyFromParts(Number(get("year")), Number(get("month")), Number(get("day")));
+      }catch{
+        return "";
+      }
+    }
+
+    function addMonthsToDateKey(dateKey, months){
+      const parsed = parseDateKey(dateKey);
+      if(!parsed) return "";
+      const d = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day));
+      d.setUTCMonth(d.getUTCMonth() + months);
+      return dateKeyFromParts(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+    }
+
+    function normalizeRoomDateRange(startKey, endKey, timeZone){
+      let start = parseDateKey(startKey) ? String(startKey) : "";
+      let end = parseDateKey(endKey) ? String(endKey) : "";
+      if(!start){
+        start = dateKeyInZone(new Date(), timeZone);
+      }
+      if(!end){
+        end = addMonthsToDateKey(start, 1) || start;
+      }
+      if(start && end && end < start){
+        end = start;
+      }
+      return { start, end };
+    }
+
+    function getDefaultRoomDates(timeZone){
+      const start = dateKeyInZone(new Date(), timeZone);
+      const end = addMonthsToDateKey(start, 1) || start;
+      return { start, end };
+    }
+
+    function formatDateKey(dateKey, timeZone){
+      const parsed = parseDateKey(dateKey);
+      if(!parsed) return "";
+      const tz = safeTimeZone(timeZone);
+      const d = makeZonedDate(parsed.year, parsed.month, parsed.day, 12, 0, tz);
+      return new Intl.DateTimeFormat(undefined, {
+        timeZone: tz,
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }).format(d);
+    }
+
+    function formatDateRange(startKey, endKey, timeZone){
+      const startLabel = formatDateKey(startKey, timeZone);
+      const endLabel = formatDateKey(endKey, timeZone);
+      if(!startLabel && !endLabel) return "";
+      if(startKey && endKey && startKey === endKey) return startLabel || endLabel;
+      if(startLabel && endLabel) return `${startLabel} - ${endLabel}`;
+      return startLabel || endLabel;
     }
 
     function timeZoneAbbr(date, timeZone){
@@ -1340,13 +1750,29 @@
       }
     }
 
-    function etAbbr(hourEt){
-      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, ET_TIMEZONE);
-      return timeZoneAbbr(d, ET_TIMEZONE) || "ET";
+    function slotBaseDate(minutes){
+      const baseTz = safeTimeZone(roomPreferredTz);
+      const hour = Math.floor(minutes / 60);
+      const minute = minutes % 60;
+      return makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hour, minute, baseTz);
     }
 
-    function etLabelWithZone(hourEt){
-      return `${etLabel(hourEt)} ${etAbbr(hourEt)}`;
+    function timeOnlyInZone(minutes, timeZone){
+      const d = slotBaseDate(minutes);
+      const tz = safeTimeZone(timeZone);
+      return new Intl.DateTimeFormat(undefined, {
+        hour:"numeric", minute:"2-digit", hour12:true, timeZone: tz
+      }).format(d);
+    }
+
+    function timeLabelInZone(minutes, timeZone){
+      const d = slotBaseDate(minutes);
+      const tz = safeTimeZone(timeZone);
+      const time = new Intl.DateTimeFormat(undefined, {
+        hour:"numeric", minute:"2-digit", hour12:true, timeZone: tz
+      }).format(d);
+      const abbr = timeZoneAbbr(d, tz);
+      return abbr ? `${time} ${abbr}` : time;
     }
 
     function makeZonedDate(year, month, day, hour, minute, timeZone, second = 0){
@@ -1366,16 +1792,6 @@
       const get = (t) => Number(parts.find(p => p.type === t).value);
       const asUTC = Date.UTC(get("year"), get("month")-1, get("day"), get("hour"), get("minute"), get("second"));
       return asUTC - date.getTime();
-    }
-
-    function etToLocalLabel(hourEt){
-      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, ET_TIMEZONE);
-      const tz = safeTimeZone(userTz);
-      const time = new Intl.DateTimeFormat(undefined, {
-        hour:"numeric", minute:"2-digit", hour12:true, timeZone: tz
-      }).format(d);
-      const abbr = timeZoneAbbr(d, tz);
-      return abbr ? `${time} ${abbr}` : time;
     }
 
     function isSchedulingClosed(){
@@ -1408,6 +1824,11 @@
       hideCursorHint();
       updateRoomStatusUI();
       updateAdminUI();
+      updateRoomSettingsUI();
+      updateScheduleSubtitle();
+      updateTimeModeNote();
+      updateToggleLabel();
+      updateCommentsUI();
       renderSlots();
     }
 
@@ -1417,17 +1838,11 @@
     }
 
     function updateAdminUI(){
-      if(!elResetRoomBtn || !elResetRoomNote || !elResetRoomNoteText) return;
+      if(!elResetRoomBtn) return;
       const canReset = !!authUser && !!activeRoom && !!db && isAdmin;
       elResetRoomBtn.disabled = !canReset;
       elResetRoomBtn.classList.toggle("isDisabled", !canReset);
       elResetRoomBtn.setAttribute("aria-disabled", canReset ? "false" : "true");
-
-      let note = "Admin only.";
-      if(!authUser) note = "Sign in to use admin tools.";
-      else if(!activeRoom) note = "Enter a room code to enable.";
-      else if(isAdmin) note = "Deletes all member selections.";
-      elResetRoomNoteText.textContent = note;
     }
 
     function updateRoomStatusUI(){
@@ -1460,7 +1875,13 @@
 
     function renderDayControls(){
       if(!elRoomDays || !elDayTabs || !elDaySelect) return;
-      const canEdit = !!authUser && !!activeRoom;
+      const canEdit = !!authUser && !!activeRoom && roomOpen;
+      const selectedDays = new Set();
+      for(const slot of userSelections){
+        if(!isKnownSlot(slot)) continue;
+        const parsed = parseSlotKey(slot);
+        if(parsed.dayId) selectedDays.add(parsed.dayId);
+      }
 
       elRoomDays.innerHTML = DAY_OPTIONS.map((d) => {
         const isActive = roomDaysSet.has(d.id);
@@ -1475,15 +1896,16 @@
 
       elDayTabs.innerHTML = roomDays.map((dayId) => {
         const isActive = dayId === activeDay;
+        const hasSelections = selectedDays.has(dayId);
         return `
-          <button type="button" class="dayTab ${isActive ? "active" : ""}" data-day="${dayId}"
+          <button type="button" class="dayTab ${isActive ? "active" : ""}${hasSelections ? " hasSelections" : ""}" data-day="${dayId}"
             aria-pressed="${isActive}">
             ${dayLabelShort(dayId)}
           </button>`;
       }).join("");
 
       elDaySelect.innerHTML = roomDays.map((dayId) =>
-        `<option value="${dayId}">${dayLabelLong(dayId)}</option>`
+        `<option value="${dayId}">${dayLabelLong(dayId)}${selectedDays.has(dayId) ? " •" : ""}</option>`
       ).join("");
       elDaySelect.value = activeDay || "";
       elDaySelect.disabled = roomDays.length === 0;
@@ -1498,6 +1920,7 @@
 
     function toggleRoomDay(dayId){
       if(!ensureAuth()) return;
+      if(!roomOpen) return toast("Room is closed.");
       const rk = ensureActiveRoom();
       if(!rk) return toast("Enter a room code to set room days.");
 
@@ -1513,6 +1936,63 @@
       applyRoomDays(ordered);
       renderAll();
       scheduleRoomDaysSave();
+    }
+
+    function setRoomPreferredTz(nextTz, { save = true, showToast = true } = {}){
+      const trimmed = String(nextTz || "").trim();
+      const candidate = trimmed || ET_TIMEZONE;
+      if(!isValidTimeZone(candidate)){
+        if(showToast) toast("Enter a valid IANA time zone.");
+        return false;
+      }
+      if(candidate === roomPreferredTz) return true;
+      roomPreferredTz = candidate;
+      const normalized = normalizeRoomDateRange(roomDateStart, roomDateEnd, roomPreferredTz);
+      const dateChanged = normalized.start !== roomDateStart || normalized.end !== roomDateEnd;
+      roomDateStart = normalized.start;
+      roomDateEnd = normalized.end;
+      updateRoomSettingsUI();
+      updateScheduleSubtitle();
+      updateToggleLabel();
+      renderSlots();
+      renderMembers();
+      if(save){
+        const payload = { preferredTz: roomPreferredTz };
+        if(dateChanged){
+          payload.dateStart = roomDateStart;
+          payload.dateEnd = roomDateEnd;
+        }
+        void saveRoomSettings(payload, showToast);
+      }
+      return true;
+    }
+
+    function commitRoomDates(){
+      if(!ensureAuth()) return;
+      if(!roomOpen) return toast("Room is closed.");
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code to update room settings.");
+      const normalized = normalizeRoomDateRange(elRoomDateStart.value, elRoomDateEnd.value, roomPreferredTz);
+      roomDateStart = normalized.start;
+      roomDateEnd = normalized.end;
+      updateRoomSettingsUI();
+      updateScheduleSubtitle();
+      void saveRoomSettings({ dateStart: roomDateStart, dateEnd: roomDateEnd }, true);
+    }
+
+    function commitRoomMeetingMinutes(){
+      if(!ensureAuth()) return;
+      if(!roomOpen) return toast("Room is closed.");
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code to update room settings.");
+      const nextMinutes = normalizeMeetingMinutes(elRoomMeetingMinutes.value);
+      if(!nextMinutes){
+        updateRoomSettingsUI();
+        return toast("Enter a valid meeting duration in minutes.");
+      }
+      roomMeetingMinutes = nextMinutes;
+      updateRoomSettingsUI();
+      void saveRoomSettings({ meetingMinutes: roomMeetingMinutes }, true);
     }
 
     function scheduleRoomDaysSave(){
@@ -1538,6 +2018,21 @@
       }catch(err){
         console.error(err);
         if(showToast) toast("Failed to update room days.");
+      }
+    }
+
+    async function saveRoomSettings(payload, showToast=true){
+      const rk = ensureActiveRoom();
+      if(!rk) return;
+      if(!ensureDb(false) || !ensureAuth(false)) return;
+
+      const update = { ...payload, updatedAt: serverTimestamp() };
+      try{
+        await setDoc(doc(db, "rooms", rk), update, { merge: true });
+        if(showToast) toast("Room settings updated.");
+      }catch(err){
+        console.error(err);
+        if(showToast) toast("Failed to update room settings.");
       }
     }
 
@@ -1610,7 +2105,7 @@
       const members = Object.values(roomMembers);
       const counts = {};
       for(const dayId of roomDays){
-        SLOT_START_HOURS_ET.forEach(h => counts[slotKey(dayId, h)] = 0);
+        SLOT_START_MINUTES.forEach(minutes => counts[slotKey(dayId, minutes)] = 0);
       }
 
       for(const m of members){
@@ -1623,8 +2118,7 @@
       return { counts, memberCount: members.length };
     }
 
-    function commonSlots(){
-      const { counts, memberCount } = computeCounts();
+    function commonSlotsFromCounts(counts, memberCount){
       if(memberCount === 0) return new Set();
       const common = new Set();
       for(const k of Object.keys(counts)){
@@ -1639,7 +2133,8 @@
       elSlotGrid.innerHTML = "";
       updateHiddenDaysHint();
       const { counts, memberCount } = computeCounts();
-      const common = commonSlots();
+      const common = commonSlotsFromCounts(counts, memberCount);
+      renderTopSlots(counts, memberCount);
       const locked = isInteractionLocked();
 
       if(!activeDay){
@@ -1647,8 +2142,8 @@
         return;
       }
 
-      for(const hourEt of SLOT_START_HOURS_ET){
-        const key = slotKey(activeDay, hourEt);
+      for(const minutes of SLOT_START_MINUTES){
+        const key = slotKey(activeDay, minutes);
 
         const btn = document.createElement("button");
         btn.type = "button";
@@ -1661,20 +2156,24 @@
         if(userSelections.has(key)) btn.classList.add("selected");
         if(common.has(key) && memberCount > 0) btn.classList.add("common");
 
-        const local = etToLocalLabel(hourEt);
+        const localBold = timeOnlyInZone(minutes, userTz);
+        const preferredBold = timeOnlyInZone(minutes, roomPreferredTz);
+        const localLabel = timeLabelInZone(minutes, userTz);
+        const preferredLabel = timeLabelInZone(minutes, roomPreferredTz);
+        const primaryLabel = showLocal ? localBold : preferredBold;
         const count = counts[key] || 0;
         const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
 
         btn.innerHTML = `
           <div class="top">
-            <div class="labelEt">${etLabel(hourEt)}</div>
+            <div class="labelEt">${primaryLabel}</div>
             <div class="count">
               <span>${count}/${memberCount || 0}</span>
               <span class="miniBar" aria-hidden="true"><span style="width:${pct}%"></span></span>
             </div>
           </div>
-          <div class="labelLocal" style="display:${showLocal ? "block":"none"}">${local} (LT)</div>
-          <div class="labelLocal" style="display:${showLocal ? "none":"block"}">${etLabelWithZone(hourEt)}</div>
+          <div class="labelLocal">${localLabel}</div>
+          <div class="labelLocal">${preferredLabel}</div>
         `;
 
         btn.addEventListener("click", () => {
@@ -1686,6 +2185,69 @@
 
         elSlotGrid.appendChild(btn);
       }
+    }
+
+    function renderTopSlots(counts, memberCount){
+      if(!elTopSlots || !elTopSlotsList) return;
+
+      if(!activeRoom){
+        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">Enter a room code to see top selections.</div>`;
+        return;
+      }
+      if(!authUser){
+        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">Sign in to view room data.</div>`;
+        return;
+      }
+      if(memberCount === 0){
+        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">No submissions yet.</div>`;
+        return;
+      }
+
+      const ranked = Object.entries(counts)
+        .filter(([, count]) => count > 0)
+        .sort((a, b) => {
+          if(b[1] !== a[1]) return b[1] - a[1];
+          return slotSortValue(a[0]) - slotSortValue(b[0]);
+        })
+        .slice(0, 7);
+
+      if(ranked.length === 0){
+        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">No selections yet.</div>`;
+        return;
+      }
+
+      elTopSlotsList.innerHTML = ranked.map(([slotKey, count]) => {
+        const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
+        const missing = getMissingForSlot(slotKey);
+        const isFull = missing.length === 0;
+        const missingText = missing.length ? `Missing: ${missing.join(", ")}` : "Full team available";
+        const star = isFull ? `<span class="topSlotStar" title="Full team available">★</span>` : "";
+        const label = escapeHtml(slotLabelRange(slotKey));
+        return `
+          <div class="topSlot">
+            <div class="topSlotDetails">
+              <div class="topSlotLabel">${label}${star}</div>
+              <div class="topSlotMissing" title="${escapeHtml(missingText)}">${escapeHtml(missingText)}</div>
+            </div>
+            <div class="topSlotMeta">
+              <span>${count}/${memberCount}</span>
+              <span class="miniBar" aria-hidden="true"><span style="width:${pct}%"></span></span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function getMissingForSlot(slotKey){
+      const members = Object.values(roomMembers);
+      const missing = [];
+      for(const m of members){
+        const slots = filterSlots(m.slots);
+        if(slots.includes(slotKey)) continue;
+        const label = m.name || m.email || "Unknown";
+        missing.push(label);
+      }
+      return missing;
     }
 
     function renderMembers(){
@@ -1722,6 +2284,7 @@
           ? slots.slice().sort((a,b) => slotSortValue(a) - slotSortValue(b))
             .map(s => `<span class="chip">${slotLabelCompact(s)}</span>`).join("")
           : `<span class="chip none">No slots selected</span>`;
+        const commentHtml = formatComment(m.comments);
 
         const updated = m.updatedAt || null;
 
@@ -1734,11 +2297,12 @@
               <div class="memberEmail">${escapeHtml(m.email || "")}</div>
             </div>
             <div style="text-align:right">
-              <div style="color:var(--muted); font-size:11px">${escapeHtml(m.tz || "")}</div>
+              <div style="color:var(--muted); font-size:11px">${escapeHtml(formatMemberTimeZone(m.tz || ""))}</div>
               <div style="color:var(--muted); font-size:11px">${escapeHtml(updated ? updated.toLocaleString() : "")}</div>
             </div>
           </div>
           <div class="chips">${chips}</div>
+          ${commentHtml ? `<div class="memberComment">${commentHtml}</div>` : ""}
         `;
         elMembers.appendChild(card);
       }
@@ -1747,12 +2311,27 @@
     function slotLabelCompact(slotKey){
       const parsed = parseSlotKey(slotKey);
       const time = parsed.time || "";
-      const hour = Number(time.slice(0,2));
-      if(!Number.isFinite(hour)) return slotKey;
-      const h12 = ((hour + 11) % 12) + 1;
-      const ampm = hour >= 12 ? "PM" : "AM";
+      const minutes = parseTimeString(time);
+      if(!Number.isFinite(minutes)) return slotKey;
       const dayLabel = parsed.dayId ? `${dayLabelShort(parsed.dayId)} ` : "";
-      return `${dayLabel}${h12}${ampm} ${etAbbr(hour)}`;
+      const zone = showLocal ? userTz : roomPreferredTz;
+      return `${dayLabel}${timeLabelInZone(minutes, zone)}`;
+    }
+
+    function slotLabelRange(slotKey){
+      const parsed = parseSlotKey(slotKey);
+      const time = parsed.time || "";
+      const startMinutes = parseTimeString(time);
+      if(!Number.isFinite(startMinutes)) return slotKey;
+      const duration = normalizeMeetingMinutes(roomMeetingMinutes) || 60;
+      const endMinutes = startMinutes + duration;
+      const zone = showLocal ? userTz : roomPreferredTz;
+      const dayLabel = parsed.dayId ? `${dayLabelShort(parsed.dayId)} ` : "";
+      const startLabel = timeOnlyInZone(startMinutes, zone);
+      const endLabel = timeOnlyInZone(endMinutes, zone);
+      const abbr = timeZoneAbbr(slotBaseDate(startMinutes), safeTimeZone(zone));
+      const suffix = abbr ? ` ${abbr}` : "";
+      return `${dayLabel}${startLabel} - ${endLabel}${suffix}`;
     }
 
     function escapeHtml(str){
@@ -1762,6 +2341,12 @@
         .replaceAll(">","&gt;")
         .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
+    }
+
+    function formatComment(text){
+      const trimmed = String(text || "").trim();
+      if(!trimmed) return "";
+      return escapeHtml(trimmed).replaceAll("\n", "<br>");
     }
 
     function renderAll(){
@@ -1807,6 +2392,7 @@
         email,
         tz: userTz,
         slots: normalizeUserSelections(Array.from(userSelections)),
+        comments: elCommentsInput ? elCommentsInput.value.trim() : "",
         updatedAt: serverTimestamp()
       };
 
@@ -1840,6 +2426,7 @@
         email,
         tz: userTz,
         slots: [],
+        comments: elCommentsInput ? elCommentsInput.value.trim() : "",
         updatedAt: serverTimestamp()
       };
 
@@ -1865,6 +2452,7 @@
           email: m.email || email,
           tz: m.tz || "",
           slots: Array.isArray(m.slots) ? m.slots : [],
+          comments: m.comments || "",
           updatedAt: m.updatedAt ? m.updatedAt.toISOString() : null
         };
       }
@@ -1872,6 +2460,10 @@
       const payload = {
         room: rk,
         days: roomDays,
+        preferredTz: roomPreferredTz,
+        dateStart: roomDateStart,
+        dateEnd: roomDateEnd,
+        meetingMinutes: roomMeetingMinutes,
         exportedAt: new Date().toISOString(),
         members
       };
@@ -1890,8 +2482,10 @@
 
     function toggleLocal(){
       showLocal = !showLocal;
-      elToggleLocal.textContent = showLocal ? "Your local time (LT)" : "US Eastern Time";
+      updateToggleLabel();
+      updateTimeModeNote();
       renderSlots();
+      renderMembers();
     }
 
     function syncFromSnapshot(){
@@ -1904,13 +2498,10 @@
 
       if(!elName.value.trim()) elName.value = me.name || "";
       if(me.tz) setUserTimeZone(me.tz, { save: false, showToast: false });
+      if(elCommentsInput && !elCommentsInput.value.trim() && me.comments){
+        elCommentsInput.value = me.comments;
+      }
       userSelections = new Set(normalizeUserSelections(me.slots));
-    }
-
-    function onRoomInput(){
-      clearTimeout(roomDebounce);
-      updateRoomLabel();
-      roomDebounce = setTimeout(setRoomFromInput, 250);
     }
 
     function onRoomCommit(){
@@ -1925,7 +2516,7 @@
     elResetRoomBtn.addEventListener("click", () => void resetRoom());
     elToggleLocal.addEventListener("click", toggleLocal);
     elThemeBtn.addEventListener("click", toggleTheme);
-    elCopyRoomBtn.addEventListener("click", copyRoomCode);
+    elLoadRoomBtn.addEventListener("click", loadRoomFromInput);
     elSignInBtn.addEventListener("click", () => setAuthMode("signin"));
     elSignUpBtn.addEventListener("click", () => setAuthMode("signup"));
     elEmailLinkBtn.addEventListener("click", () => setAuthMode("emaillink"));
@@ -1933,6 +2524,37 @@
     elSignOutBtn.addEventListener("click", () => void signOutUser());
     elAuthSubmitBtn.addEventListener("click", submitAuth);
     elRoomToggleBtn.addEventListener("click", () => void toggleRoomStatus());
+
+    if(elRoomTzSelect){
+      elRoomTzSelect.addEventListener("change", () => {
+        if(!ensureAuth()) return;
+        if(!roomOpen) return toast("Room is closed.");
+        const rk = ensureActiveRoom();
+        if(!rk) return toast("Enter a room code to update room settings.");
+        const ok = setRoomPreferredTz(elRoomTzSelect.value, { save: true, showToast: true });
+        if(!ok) setSelectValue(elRoomTzSelect, roomPreferredTz);
+      });
+    }
+    if(elRoomDateStart) elRoomDateStart.addEventListener("change", commitRoomDates);
+    if(elRoomDateEnd) elRoomDateEnd.addEventListener("change", commitRoomDates);
+    if(elRoomMeetingMinutes) elRoomMeetingMinutes.addEventListener("change", commitRoomMeetingMinutes);
+
+    if(elCommentsToggle){
+      elCommentsToggle.addEventListener("click", () => {
+        if(scheduleClosed) return toast("Scheduling is closed.");
+        if(!ensureAuth()) return;
+        if(!roomOpen) return toast("Room is closed.");
+        const rk = ensureActiveRoom();
+        if(!rk) return toast("Enter a room code first.");
+        setCommentsView(!showComments);
+      });
+    }
+    if(elCommentsInput){
+      elCommentsInput.addEventListener("input", () => {
+        clearTimeout(commentSaveTimer);
+        commentSaveTimer = setTimeout(autoSaveIfIdentified, 500);
+      });
+    }
 
     elRoomDays.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-day]");
@@ -1943,15 +2565,15 @@
     elDayTabs.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-day]");
       if(!btn) return;
+      if(showComments) setCommentsView(false);
       setActiveDay(btn.dataset.day);
     });
 
     elDaySelect.addEventListener("change", (e) => {
+      if(showComments) setCommentsView(false);
       setActiveDay(e.target.value);
     });
 
-    elRoom.addEventListener("input", onRoomInput);
-    elRoom.addEventListener("blur", onRoomCommit);
     elRoom.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); onRoomCommit(); } });
 
     elSlotGrid.addEventListener("mousemove", (e) => {
@@ -1976,13 +2598,8 @@
       if(authMode === "emaillink") return submitAuth();
       if(authMode === "signin" || authMode === "signup") return elAuthPassword.focus();
     });
-    if(elTzInput){
-      elTzInput.addEventListener("change", commitTimeZoneInput);
-      elTzInput.addEventListener("keydown", (e) => {
-        if(e.key !== "Enter") return;
-        e.preventDefault();
-        commitTimeZoneInput();
-      });
+    if(elTzSelect){
+      elTzSelect.addEventListener("change", commitTimeZoneSelect);
     }
     if(elTzResetBtn){
       elTzResetBtn.addEventListener("click", () => {

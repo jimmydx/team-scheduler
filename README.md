@@ -43,16 +43,16 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['days','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail']);
+        && request.resource.data.keys().hasOnly(['days','preferredTz','dateStart','dateEnd','meetingMinutes','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail']);
       allow update: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['days','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail','admins'])
+        && request.resource.data.keys().hasOnly(['days','preferredTz','dateStart','dateEnd','meetingMinutes','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail','admins'])
         && request.resource.data.admins == resource.data.admins;
       allow delete: if isRoomAdmin(roomId);
     }
     match /rooms/{roomId}/members/{memberId} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['name','email','tz','slots','updatedAt']);
+        && request.resource.data.keys().hasOnly(['name','email','tz','slots','comments','updatedAt']);
       allow delete: if isRoomAdmin(roomId);
     }
   }
@@ -60,6 +60,8 @@ service cloud.firestore {
 ```
 
 Room days are saved in the room document (`rooms/{roomId}`) as `days: ["mon","tue",...]` and can be edited from the UI.
+Room scheduling settings are saved as `preferredTz` (IANA time zone), `dateStart`/`dateEnd` (YYYY-MM-DD), and `meetingMinutes` (integer minutes).
+Member submissions also include an optional `comments` field.
 Room open/closed status is saved in the room document as `isOpen` with `statusByName`, `statusByEmail`, and `statusUpdatedAt`.
 
 ## Admin reset (optional)
