@@ -398,6 +398,26 @@
       backdrop-filter: blur(10px);
     }
     .toast.show{display:flex;}
+
+    .cursorHint{
+      position:fixed;
+      left:0;
+      top:0;
+      transform:translate(12px, 12px);
+      background: var(--toastBg);
+      border:1px solid color-mix(in srgb, var(--border) 72%, transparent);
+      padding:6px 10px;
+      border-radius:999px;
+      color:var(--text);
+      font-size:11px;
+      box-shadow:var(--shadow);
+      display:none;
+      pointer-events:none;
+      white-space:nowrap;
+      z-index:60;
+      backdrop-filter: blur(10px);
+    }
+    .cursorHint.show{display:block;}
   </style>
 </head>
 
@@ -574,6 +594,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite">
     <span id="toastMsg"></span>
   </div>
+  <div class="cursorHint" id="cursorHint">Sign in to select slots.</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
@@ -658,6 +679,7 @@
 
     const elToast = document.getElementById("toast");
     const elToastMsg = document.getElementById("toastMsg");
+    const elCursorHint = document.getElementById("cursorHint");
 
     const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
     let userTz = deviceTz;
@@ -713,7 +735,7 @@
     // ---------- Time zone ----------
     function updateTzPill(){
       if(!elTzPill) return;
-      const note = authUser ? "change below" : "you can change this by signing in";
+      const note = authUser ? "change below" : "sign in to change";
       elTzPill.textContent = `Your time zone: ${userTz} (${note})`;
     }
 
@@ -769,6 +791,33 @@
       elToast.classList.add("show");
       clearTimeout(toast._t);
       toast._t = setTimeout(()=> elToast.classList.remove("show"), 1800);
+    }
+
+    function shouldShowSignInHint(){
+      return !authUser && !scheduleClosed && roomOpen;
+    }
+
+    function showCursorHint(x, y){
+      if(!elCursorHint) return;
+      elCursorHint.textContent = "Sign in to select slots.";
+      const padding = 16;
+      const rect = elCursorHint.getBoundingClientRect();
+      let left = x + 12;
+      let top = y + 12;
+      if(left + rect.width + padding > window.innerWidth){
+        left = Math.max(padding, window.innerWidth - rect.width - padding);
+      }
+      if(top + rect.height + padding > window.innerHeight){
+        top = Math.max(padding, window.innerHeight - rect.height - padding);
+      }
+      elCursorHint.style.left = `${left}px`;
+      elCursorHint.style.top = `${top}px`;
+      elCursorHint.classList.add("show");
+    }
+
+    function hideCursorHint(){
+      if(!elCursorHint) return;
+      elCursorHint.classList.remove("show");
     }
 
     async function copyRoomCode(){
@@ -1356,6 +1405,7 @@
         btn.disabled = disabled;
         btn.setAttribute("aria-disabled", disabled ? "true" : "false");
       });
+      hideCursorHint();
       updateRoomStatusUI();
       updateAdminUI();
       renderSlots();
@@ -1585,6 +1635,7 @@
 
     // ---------- Rendering ----------
     function renderSlots(){
+      hideCursorHint();
       elSlotGrid.innerHTML = "";
       updateHiddenDaysHint();
       const { counts, memberCount } = computeCounts();
@@ -1902,6 +1953,15 @@
     elRoom.addEventListener("input", onRoomInput);
     elRoom.addEventListener("blur", onRoomCommit);
     elRoom.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); onRoomCommit(); } });
+
+    elSlotGrid.addEventListener("mousemove", (e) => {
+      if(!shouldShowSignInHint()) return hideCursorHint();
+      const target = document.elementFromPoint(e.clientX, e.clientY);
+      const slot = target ? target.closest(".slot") : null;
+      if(!slot || !elSlotGrid.contains(slot)) return hideCursorHint();
+      showCursorHint(e.clientX, e.clientY);
+    });
+    elSlotGrid.addEventListener("mouseleave", hideCursorHint);
 
     elName.addEventListener("input", autoSaveIfIdentified);
     elAuthPassword.addEventListener("keydown", (e) => {
