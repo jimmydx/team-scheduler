@@ -29,6 +29,7 @@
       --border:rgba(15,23,42,.14);
       --accent:#0284c7;
       --accent2:#7c3aed;
+      --star:#fde68a;
       --good:#059669;
       --bad:#e11d48;
       --shadow: 0 12px 30px rgba(2,6,23,.10);
@@ -52,6 +53,7 @@
       --border:rgba(148,163,184,.22);
       --accent:#7dd3fc;
       --accent2:#c084fc;
+      --star:#fde68a;
       --good:#34d399;
       --bad:#fb7185;
       --shadow: 0 12px 30px rgba(0,0,0,.35);
@@ -237,11 +239,26 @@
       display:grid;
       gap:10px;
     }
+    .topSlotsHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+    .topSlotsHead{display:flex;flex-direction:column;gap:2px;}
     .topSlotsTitle{
       font-size:12px;
       color:var(--muted);
       text-transform:uppercase;
       letter-spacing:.08em;
+    }
+    .topSlotsSub{font-size:11px;color:var(--muted);}
+    .topToggle{display:flex;gap:6px;flex-wrap:wrap;}
+    .topToggle button{
+      padding:6px 10px;
+      font-size:11px;
+      border-radius:999px;
+      background: var(--slotBg);
+      border:1px solid color-mix(in srgb, var(--border) 85%, transparent);
+    }
+    .topToggle button.active{
+      border-color:color-mix(in srgb, var(--accent) 60%, transparent);
+      background: var(--slotBgHover);
     }
     .topSlotsList{display:grid;gap:8px;}
     .topSlot{
@@ -267,6 +284,62 @@
       text-overflow:ellipsis;
     }
     .topSlotEmpty{color:var(--muted);font-size:12px;padding:6px 2px;}
+    .topSlotsGraph{display:block;}
+    .heatmap{display:grid;gap:10px;--axis-width:52px;}
+    .heatmapScroll{overflow-x:auto;padding-bottom:4px;}
+    .heatmapGrid,
+    .heatmapAxis{
+      --day-count: 1;
+      display:grid;
+      grid-template-columns: var(--axis-width) repeat(var(--day-count), minmax(32px, 1fr));
+      gap:4px;
+      align-items:center;
+    }
+    .heatmapAxis{margin-bottom:4px;}
+    .heatmapDay{font-size:10px;color:var(--muted);font-weight:600;text-align:center;}
+    .heatmapTime{font-size:10px;color:var(--muted);white-space:nowrap;text-align:right;}
+    .heatmapCell{
+      height:18px;
+      border-radius:5px;
+      border:1px solid color-mix(in srgb, var(--border) 80%, transparent);
+      background: color-mix(in srgb, var(--accent) var(--heat), var(--slotBg));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .heatmapStar{font-size:12px;color:var(--star);line-height:1;}
+    .heatmapLegend{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:11px;
+      color:var(--muted);
+      padding-left:var(--axis-width);
+    }
+    .heatmapNote{
+      font-size:11px;
+      color:var(--muted);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin-left:auto;
+    }
+    .heatmapNote .heatmapStar{
+      background: color-mix(in srgb, var(--accent) 75%, transparent);
+      border-radius:4px;
+      padding:1px 4px;
+      line-height:1;
+    }
+    .heatmapScale{
+      height:8px;
+      width:140px;
+      border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--border) 80%, transparent);
+      background: linear-gradient(90deg,
+        color-mix(in srgb, var(--slotBg) 80%, transparent),
+        color-mix(in srgb, var(--accent) 85%, transparent)
+      );
+    }
 
     .daySwitch{padding:10px 14px 0; display:flex; flex-direction:column; gap:10px;}
     .daySelect{display:none;}
@@ -692,8 +765,18 @@
         </div>
 
         <div class="topSlots" id="topSlots">
-          <div class="topSlotsTitle">Top 7 most chosen slots</div>
+          <div class="topSlotsHeader">
+            <div class="topSlotsHead">
+              <div class="topSlotsTitle" id="topSlotsTitle">Availability heatmap</div>
+              <div class="topSlotsSub" id="heatmapSubtitle"></div>
+            </div>
+            <div class="topToggle" role="tablist" aria-label="Ranking view">
+              <button id="topGraphBtn" class="active" type="button" aria-pressed="true">Graph</button>
+              <button id="topRankBtn" type="button" aria-pressed="false">Ranking</button>
+            </div>
+          </div>
           <div class="topSlotsList" id="topSlotsList"></div>
+          <div class="topSlotsGraph" id="topSlotsGraph" style="display:none"></div>
         </div>
       </section>
     </div>
@@ -785,7 +868,12 @@
     const elSlotRoomLabel = document.getElementById("slotRoomLabel");
     const elRoomListLabel = document.getElementById("roomListLabel");
     const elTopSlots = document.getElementById("topSlots");
+    const elTopSlotsTitle = document.getElementById("topSlotsTitle");
     const elTopSlotsList = document.getElementById("topSlotsList");
+    const elTopSlotsGraph = document.getElementById("topSlotsGraph");
+    const elHeatmapSubtitle = document.getElementById("heatmapSubtitle");
+    const elTopRankBtn = document.getElementById("topRankBtn");
+    const elTopGraphBtn = document.getElementById("topGraphBtn");
     const elScheduleSubtitle = document.getElementById("scheduleSubtitle");
     const elTzPill = document.getElementById("tzPill");
     const elRoomStatusDot = document.getElementById("roomStatusDot");
@@ -843,6 +931,7 @@
     let roomMeetingMinutes = 60;
     let showComments = false;
     let commentSaveTimer = null;
+    let topView = "graph";
     let roomAdmins = [];
     let isAdmin = false;
     let roomUnsub = null;
@@ -1449,6 +1538,44 @@
         : `Room's time zone${preferredSuffix}`;
     }
 
+    function updateTopViewUI(){
+      if(elTopRankBtn){
+        elTopRankBtn.classList.toggle("active", topView === "rank");
+        elTopRankBtn.setAttribute("aria-pressed", topView === "rank" ? "true" : "false");
+      }
+      if(elTopGraphBtn){
+        elTopGraphBtn.classList.toggle("active", topView === "graph");
+        elTopGraphBtn.setAttribute("aria-pressed", topView === "graph" ? "true" : "false");
+      }
+      if(elTopSlotsTitle){
+        elTopSlotsTitle.textContent = topView === "graph"
+          ? "Availability heatmap"
+          : "Top 7 most chosen slots";
+      }
+      if(elTopSlotsList) elTopSlotsList.style.display = topView === "rank" ? "grid" : "none";
+      if(elTopSlotsGraph) elTopSlotsGraph.style.display = topView === "graph" ? "block" : "none";
+      updateHeatmapSubtitle();
+    }
+
+    function setTopView(view){
+      topView = view === "graph" ? "graph" : "rank";
+      updateTopViewUI();
+      renderSlots();
+    }
+
+    function updateHeatmapSubtitle(){
+      if(!elHeatmapSubtitle) return;
+      if(topView !== "graph"){
+        elHeatmapSubtitle.textContent = "";
+        return;
+      }
+      const zone = safeTimeZone(showLocal ? userTz : roomPreferredTz);
+      const abbr = timeZoneAbbr(new Date(), zone);
+      const label = abbr ? abbr : zone;
+      const mode = showLocal ? "your local time" : "room's default time";
+      elHeatmapSubtitle.textContent = `Times shown in ${mode} (${label}).`;
+    }
+
     function canEditRoomSettings(){
       return !!authUser && !!activeRoom && !!db && roomOpen;
     }
@@ -1829,6 +1956,8 @@
       updateTimeModeNote();
       updateToggleLabel();
       updateCommentsUI();
+      updateTopViewUI();
+      updateHeatmapSubtitle();
       renderSlots();
     }
 
@@ -2188,21 +2317,26 @@
     }
 
     function renderTopSlots(counts, memberCount){
-      if(!elTopSlots || !elTopSlotsList) return;
+      if(!elTopSlots) return;
+      updateTopViewUI();
 
+      const showGraph = topView === "graph";
       if(!activeRoom){
-        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">Enter a room code to see top selections.</div>`;
-        return;
+        return renderTopMessage("Enter a room code to see top selections.", showGraph);
       }
       if(!authUser){
-        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">Sign in to view room data.</div>`;
-        return;
+        return renderTopMessage("Sign in to view room data.", showGraph);
       }
       if(memberCount === 0){
-        elTopSlotsList.innerHTML = `<div class="topSlotEmpty">No submissions yet.</div>`;
+        return renderTopMessage("No submissions yet.", showGraph);
+      }
+
+      if(showGraph){
+        renderTopGraph(counts, memberCount);
         return;
       }
 
+      if(!elTopSlotsList) return;
       const ranked = Object.entries(counts)
         .filter(([, count]) => count > 0)
         .sort((a, b) => {
@@ -2236,6 +2370,63 @@
           </div>
         `;
       }).join("");
+    }
+
+    function renderTopMessage(message, showGraph){
+      if(showGraph){
+        if(elTopSlotsGraph) elTopSlotsGraph.innerHTML = `<div class="topSlotEmpty">${escapeHtml(message)}</div>`;
+        if(elTopSlotsList) elTopSlotsList.innerHTML = "";
+      }else{
+        if(elTopSlotsList) elTopSlotsList.innerHTML = `<div class="topSlotEmpty">${escapeHtml(message)}</div>`;
+        if(elTopSlotsGraph) elTopSlotsGraph.innerHTML = "";
+      }
+    }
+
+    function renderTopGraph(counts, memberCount){
+      if(!elTopSlotsGraph) return;
+      const zone = showLocal ? userTz : roomPreferredTz;
+      const dayLabels = roomDays.map(dayId => ({ id: dayId, label: dayLabelShort(dayId) }));
+      const timeLabels = SLOT_START_MINUTES.map(minutes => timeOnlyInZone(minutes, zone));
+
+      const rows = SLOT_START_MINUTES.map((minutes, index) => {
+        const timeLabel = timeLabels[index];
+        const cells = dayLabels.map(({ id, label: dayLabel }) => {
+          const key = slotKey(id, minutes);
+          const count = counts[key] || 0;
+          const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
+          const isFull = memberCount > 0 && count === memberCount;
+          const cellLabel = `${dayLabel} ${timeLabel} - ${count}/${memberCount}`;
+          const star = isFull ? `<span class="heatmapStar" aria-hidden="true">★</span>` : "";
+          return `<div class="heatmapCell" style="--heat:${pct}%;" title="${escapeHtml(cellLabel)}" aria-label="${escapeHtml(cellLabel)}">${star}</div>`;
+        }).join("");
+        return `
+          <div class="heatmapTime">${escapeHtml(timeLabel)}</div>
+          ${cells}
+        `;
+      }).join("");
+
+      const axis = dayLabels.map(({ label }) => `<div class="heatmapDay">${escapeHtml(label)}</div>`).join("");
+      const gridStyle = `style="--day-count:${dayLabels.length}"`;
+
+      elTopSlotsGraph.innerHTML = `
+        <div class="heatmap">
+          <div class="heatmapScroll">
+            <div class="heatmapAxis" ${gridStyle}>
+              <div></div>
+              ${axis}
+            </div>
+            <div class="heatmapGrid" ${gridStyle}>
+              ${rows}
+            </div>
+          </div>
+          <div class="heatmapLegend">
+            <span>None</span>
+            <span class="heatmapScale" aria-hidden="true"></span>
+            <span>Everyone</span>
+            <div class="heatmapNote"><span class="heatmapStar" aria-hidden="true">★</span> Full team availability</div>
+          </div>
+        </div>
+      `;
     }
 
     function getMissingForSlot(slotKey){
@@ -2484,6 +2675,7 @@
       showLocal = !showLocal;
       updateToggleLabel();
       updateTimeModeNote();
+      updateHeatmapSubtitle();
       renderSlots();
       renderMembers();
     }
@@ -2538,6 +2730,9 @@
     if(elRoomDateStart) elRoomDateStart.addEventListener("change", commitRoomDates);
     if(elRoomDateEnd) elRoomDateEnd.addEventListener("change", commitRoomDates);
     if(elRoomMeetingMinutes) elRoomMeetingMinutes.addEventListener("change", commitRoomMeetingMinutes);
+
+    if(elTopRankBtn) elTopRankBtn.addEventListener("click", () => setTopView("rank"));
+    if(elTopGraphBtn) elTopGraphBtn.addEventListener("click", () => setTopView("graph"));
 
     if(elCommentsToggle){
       elCommentsToggle.addEventListener("click", () => {
