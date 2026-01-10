@@ -579,6 +579,9 @@
     .authDebugFoot{
       text-align:right;
       margin-top:12px;
+      font-size:10px;
+      color:color-mix(in srgb, var(--muted) 70%, transparent);
+      font-style:italic;
     }
   </style>
 </head>
@@ -808,6 +811,10 @@
     </section>
 
     <div class="hint footnote authDebugFoot" id="authDebug" style="display:none"></div>
+    <div class="hint footnote" style="text-align:center;margin-top:16px;">
+      Designed and created by Jaime Aguilar.<br>
+      Contact: jimmydx@mac.com
+    </div>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite">
@@ -1249,7 +1256,7 @@
         const uid = authUser.uid || "unknown";
         const email = authUser.email || "unknown";
         const verified = authUser.emailVerified ? "yes" : "no";
-        elAuthDebug.textContent = `Auth ok: ${email} | Provider: ${provider} | UID: ${uid} | Verified: ${verified}`;
+        elAuthDebug.textContent = `Developer: Auth ok: ${email} | Provider: ${provider} | UID: ${uid} | Verified: ${verified}`;
       }else{
         elAuthDebug.textContent = "Auth: signed out (no Firebase user).";
       }
@@ -2297,7 +2304,7 @@
 
         const localBold = timeOnlyInZone(minutes, userTz);
         const preferredBold = timeOnlyInZone(minutes, roomPreferredTz);
-        const localLabel = timeLabelInZone(minutes, userTz);
+        const localLabel = `${timeLabelInZone(minutes, userTz)} (LT)`;
         const preferredLabel = timeLabelInZone(minutes, roomPreferredTz);
         const primaryLabel = showLocal ? localBold : preferredBold;
         const count = counts[key] || 0;
