@@ -149,6 +149,61 @@
     .authRow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
     .authTitle{font-weight:700;font-size:13px;}
     .authSub{color:var(--muted);font-size:12px;}
+    .authTop{display:flex;flex-direction:column;gap:10px;}
+    .authPrimary{width:100%;}
+    .authDivider{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:var(--muted);
+      font-size:12px;
+      margin:6px 0;
+    }
+    .authDivider::before,
+    .authDivider::after{
+      content:"";
+      flex:1;
+      height:1px;
+      background: color-mix(in srgb, var(--border) 80%, transparent);
+    }
+    .authActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+    .authActions button.active{
+      border-color:color-mix(in srgb, var(--accent) 55%, transparent);
+      background: var(--slotBgHover);
+    }
+    .authFields{display:none;flex-direction:column;gap:10px;margin-top:6px;}
+    .authFields.active{display:flex;}
+    .authProfile{margin-top:10px;}
+    .authNote{text-align:center;}
+    .roomTag{font-weight:700;color:var(--accent);}
+    .roomMeta{margin-top:6px;}
+    .dayHint{margin-top:0;}
+
+    .dayChoices,
+    .dayTabs{display:flex;gap:8px;flex-wrap:wrap;}
+    .dayChoice,
+    .dayTab{
+      border:1px solid color-mix(in srgb, var(--border) 85%, transparent);
+      background: var(--slotBg);
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:-.01em;
+      cursor:pointer;
+    }
+    .dayChoice.active,
+    .dayTab.active{
+      border-color:color-mix(in srgb, var(--accent) 60%, transparent);
+      background: var(--slotBgHover);
+    }
+
+    .daySwitch{padding:10px 14px 0; display:flex; flex-direction:column; gap:10px;}
+    .daySelect{display:none;}
+    @media (max-width: 640px){
+      .dayTabs{display:none;}
+      .daySelect{display:block;}
+    }
     label{font-size:12px;color:var(--muted);}
 
     input{
@@ -167,7 +222,24 @@
       box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
     }
 
+    select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid color-mix(in srgb, var(--border) 90%, transparent);
+      background: color-mix(in srgb, var(--panel) 80%, transparent);
+      color:var(--text);
+      outline:none;
+      transition:.15s;
+    }
+
+    select:focus{
+      border-color:color-mix(in srgb, var(--accent) 70%, transparent);
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
     .hint{font-size:12px;color:var(--muted);margin-top:-6px;}
+    .hint.footnote{font-size:11px;color:color-mix(in srgb, var(--muted) 80%, transparent);}
 
     button{
       border:1px solid color-mix(in srgb, var(--border) 90%, transparent);
@@ -333,16 +405,13 @@
   <div class="wrap">
     <header>
       <div>
-        <h1>Team Scheduling Tool</h1>
+        <h1>Team Scheduling</h1>
         <div class="subtitle">
-          Select your preferred 1-hour meeting slots (Eastern Time + your local time). The team list updates as people submit.
+          Select your preferred 1-hour meeting slots. The team list updates as people submit.
         </div>
 
         <div class="badgeRow">
-          <div class="pill"><span class="dot"></span><span><b>Scheduling closes:</b> May 15, 2026</span></div>
-          <div class="pill"><span class="dot" id="scheduleDot" style="background:var(--good)"></span><span id="schedulePill">Scheduling open</span></div>
           <div class="pill"><span class="dot" style="background:var(--good)"></span><span id="tzPill">Your time zone: …</span></div>
-          <div class="pill"><span class="dot" style="background:var(--accent2)"></span><span>Slots: 9:00 AM–5:00 PM ET (last start 4:00 PM)</span></div>
         </div>
       </div>
 
@@ -356,7 +425,7 @@
       <section class="panel">
         <div class="panelHead">
           <div>
-            <h2>Your info</h2>
+            <h2>User info</h2>
             <p>Selections are scoped by room code.</p>
           </div>
         </div>
@@ -371,23 +440,47 @@
               <button id="signOutBtn" class="btnSubtle" type="button" style="display:none">Sign out</button>
             </div>
             <div id="authControls">
-              <div class="field">
-                <label for="authEmail">Login email</label>
-                <input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email" />
+              <div class="authTop">
+                <button id="googleBtn" class="authPrimary" type="button">Google sign-in</button>
               </div>
-              <div class="field">
-                <label for="authPassword">Password</label>
-                <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
+              <div class="authDivider"><span>or</span></div>
+              <div class="authActions">
+                <button id="signInBtn" type="button" aria-expanded="false">Sign in</button>
+                <button id="signUpBtn" type="button" aria-expanded="false">Create account</button>
+                <button id="emailLinkBtn" type="button" aria-expanded="false">Email link</button>
               </div>
-              <div class="row" style="justify-content:flex-start">
-                <button id="signInBtn" type="button">Sign in</button>
-                <button id="signUpBtn" type="button">Create account</button>
-                <button id="emailLinkBtn" type="button">Email link</button>
-                <button id="googleBtn" type="button">Google sign-in</button>
+              <div id="authFields" class="authFields" aria-live="polite">
+                <div class="field" id="authEmailField">
+                  <label for="authEmail">Login email</label>
+                  <input id="authEmail" type="email" placeholder="you@company.com" autocomplete="email" />
+                </div>
+                <div class="field" id="authPasswordField">
+                  <label for="authPassword">Password</label>
+                  <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
+                </div>
+                <div class="row" style="justify-content:flex-start">
+                  <button id="authSubmitBtn" type="button">Continue</button>
+                </div>
+                <div class="hint" id="authHint"></div>
               </div>
-              <div class="hint">Passwordless: enter your email, then click Email link.</div>
             </div>
-            <div class="hint">Sign in to view and save room selections.</div>
+            <div id="authProfile" class="authProfile" style="display:none">
+              <div class="field">
+                <label for="name">Display name</label>
+                <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
+                <div class="hint">Shown in the team list. Your sign-in email is used automatically.</div>
+              </div>
+              <div class="field">
+                <label for="tzInput">Time zone (IANA)</label>
+                <input id="tzInput" placeholder="e.g., America/New_York" autocomplete="off" list="tzOptions" />
+                <datalist id="tzOptions"></datalist>
+                <div class="hint">Used for local time display and saved with your entry.</div>
+                <div class="row" style="justify-content:flex-start">
+                  <button id="tzResetBtn" class="btnSubtle" type="button">Use device time zone</button>
+                </div>
+              </div>
+            </div>
+            <div class="hint authNote">Sign in to view and save room selections.</div>
           </div>
 
           <div class="field">
@@ -396,18 +489,24 @@
               <input id="room" placeholder="e.g., physics-lab / team-standup" autocomplete="off" required />
               <button id="copyRoomBtn" class="btnSubtle" type="button">Copy</button>
             </div>
-            <div class="hint">Room codes are lowercased; spaces become hyphens.</div>
+            <div class="hint footnote">(room codes are lowercased; spaces become hyphens.)</div>
           </div>
 
           <div class="field">
-            <label for="name">Name</label>
-            <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
+            <label>Active days for current room/team:</label>
+            <div class="dayChoices" id="roomDays"></div>
           </div>
 
           <div class="field">
-            <label for="email">Email</label>
-            <input id="email" placeholder="e.g., alex@company.com" autocomplete="email" inputmode="email" />
-            <div class="hint">Your sign-in email is used when available.</div>
+            <label>Room status</label>
+            <div class="row" style="justify-content:flex-start">
+              <div class="pill">
+                <span class="dot" id="roomStatusDot" style="background:var(--good)"></span>
+                <span id="roomStatusLabel">Room open</span>
+              </div>
+              <button id="roomToggleBtn" type="button">Close room</button>
+            </div>
+            <div class="hint roomMeta" id="roomStatusMeta" style="display:none"></div>
           </div>
 
           <div class="row" style="margin-top:14px">
@@ -421,13 +520,19 @@
       <section class="panel">
         <div class="panelHead">
           <div>
-            <h2>Select 1-hour slots</h2>
-            <p>ET shown in bold; your local time below.</p>
+            <h2>Select 1-hour slots: <span id="slotRoomLabel" class="roomTag"></span></h2>
+            <p>Eastern time shown in bold; your local time below.</p>
           </div>
           <div style="text-align:right">
             <div style="color:var(--muted); font-size:12px">Members submitted</div>
             <div style="font-weight:900; font-size:20px" id="memberCount">0</div>
           </div>
+        </div>
+
+        <div class="daySwitch">
+          <div class="dayTabs" id="dayTabs"></div>
+          <select id="daySelect" class="daySelect" aria-label="Select day"></select>
+          <div id="hiddenDaysHint" class="hint dayHint" style="display:none"></div>
         </div>
 
         <div class="slotGrid" id="slotGrid"></div>
@@ -438,8 +543,8 @@
             <div class="keyItem"><span class="swatch swCom"></span> Selected by everyone</div>
           </div>
           <div class="keyItem" style="gap:10px">
-            <span style="color:var(--muted)">Show times in:</span>
-            <button id="toggleLocal" type="button" style="padding:9px 10px">Your local time</button>
+            <span style="color:var(--muted)">Showing times in:</span>
+            <button id="toggleLocal" type="button" style="padding:9px 10px">Your local time (LT)</button>
           </div>
         </div>
       </section>
@@ -452,10 +557,14 @@
           <h2>Current team selections (this room)</h2>
           <p>Watch convergence by finding slots selected by everyone.</p>
         </div>
-        <div class="row" style="gap:10px">
-          <button id="exportBtn" type="button">Export JSON</button>
-          <div class="pill"><span class="dot" style="background:var(--bad)"></span><span>Room reset requires admin</span></div>
-        </div>
+          <div class="row" style="gap:10px">
+            <button id="exportBtn" type="button">Export JSON</button>
+            <button id="resetRoomBtn" class="btnDanger" type="button">Reset room</button>
+            <div class="pill" id="resetRoomNote">
+              <span class="dot" style="background:var(--bad)"></span>
+              <span id="resetRoomNoteText">Admin only</span>
+            </div>
+          </div>
       </div>
 
       <div class="members" id="members"></div>
@@ -469,7 +578,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7cfuYuOYIUoLavGJlfua4UYfawDcZMT0",
@@ -486,22 +595,45 @@
 
     // 1-hour slots starting in ET, 9..16 inclusive
     const SLOT_START_HOURS_ET = Array.from({length: 8}, (_, i) => 9 + i);
+    const DAY_OPTIONS = [
+      { id: "mon", short: "Mon", long: "Monday" },
+      { id: "tue", short: "Tue", long: "Tuesday" },
+      { id: "wed", short: "Wed", long: "Wednesday" },
+      { id: "thu", short: "Thu", long: "Thursday" },
+      { id: "fri", short: "Fri", long: "Friday" },
+      { id: "sat", short: "Sat", long: "Saturday" },
+      { id: "sun", short: "Sun", long: "Sunday" }
+    ];
+    const DEFAULT_ROOM_DAYS = ["mon", "tue", "wed", "thu", "fri"];
     const REF_DATE = { year: 2026, month: 5, day: 1 }; // stable conversion date
-    const SCHEDULE_CLOSE_ET = makeZonedDate(2026, 5, 15, 23, 59, "America/New_York", 59);
+    const ET_TIMEZONE = "America/New_York";
+    const SCHEDULE_CLOSE_ET = makeZonedDate(2026, 5, 15, 23, 59, ET_TIMEZONE, 59);
+    const DAY_LOOKUP = new Map(DAY_OPTIONS.map(d => [d.id, d]));
+    const DAY_ORDER = new Map(DAY_OPTIONS.map((d, i) => [d.id, i]));
+    const SLOT_TIME_SET = new Set(SLOT_START_HOURS_ET.map(h => `${String(h).padStart(2,"0")}:00`));
 
     const elRoom = document.getElementById("room");
     const elName = document.getElementById("name");
-    const elEmail = document.getElementById("email");
     const elSlotGrid = document.getElementById("slotGrid");
+    const elRoomDays = document.getElementById("roomDays");
+    const elDayTabs = document.getElementById("dayTabs");
+    const elDaySelect = document.getElementById("daySelect");
+    const elHiddenDaysHint = document.getElementById("hiddenDaysHint");
     const elMembers = document.getElementById("members");
     const elMemberCount = document.getElementById("memberCount");
+    const elSlotRoomLabel = document.getElementById("slotRoomLabel");
     const elTzPill = document.getElementById("tzPill");
-    const elSchedulePill = document.getElementById("schedulePill");
-    const elScheduleDot = document.getElementById("scheduleDot");
+    const elRoomStatusDot = document.getElementById("roomStatusDot");
+    const elRoomStatusLabel = document.getElementById("roomStatusLabel");
+    const elRoomStatusMeta = document.getElementById("roomStatusMeta");
+    const elRoomToggleBtn = document.getElementById("roomToggleBtn");
 
     const elSaveBtn = document.getElementById("saveBtn");
     const elClearMeBtn = document.getElementById("clearMeBtn");
     const elExportBtn = document.getElementById("exportBtn");
+    const elResetRoomBtn = document.getElementById("resetRoomBtn");
+    const elResetRoomNote = document.getElementById("resetRoomNote");
+    const elResetRoomNoteText = document.getElementById("resetRoomNoteText");
     const elToggleLocal = document.getElementById("toggleLocal");
     const elThemeBtn = document.getElementById("themeBtn");
     const elCopyRoomBtn = document.getElementById("copyRoomBtn");
@@ -514,24 +646,47 @@
     const elSignOutBtn = document.getElementById("signOutBtn");
     const elAuthStatus = document.getElementById("authStatus");
     const elAuthControls = document.getElementById("authControls");
+    const elAuthFields = document.getElementById("authFields");
+    const elAuthEmailField = document.getElementById("authEmailField");
+    const elAuthPasswordField = document.getElementById("authPasswordField");
+    const elAuthSubmitBtn = document.getElementById("authSubmitBtn");
+    const elAuthHint = document.getElementById("authHint");
+    const elAuthProfile = document.getElementById("authProfile");
+    const elTzInput = document.getElementById("tzInput");
+    const elTzResetBtn = document.getElementById("tzResetBtn");
+    const elTzOptions = document.getElementById("tzOptions");
 
     const elToast = document.getElementById("toast");
     const elToastMsg = document.getElementById("toastMsg");
 
-    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Local";
-    elTzPill.textContent = `Your time zone: ${userTz}`;
+    const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    let userTz = deviceTz;
 
     let showLocal = true;
     let userSelections = new Set();
     let activeRoom = "";
     let roomMembers = {};
+    let roomDays = DEFAULT_ROOM_DAYS.slice();
+    let roomDaysSet = new Set(roomDays);
+    let activeDay = roomDays[0] || "";
+    let roomOpen = true;
+    let roomStatusUpdatedAt = null;
+    let roomStatusByName = "";
+    let roomStatusByEmail = "";
+    let roomAdmins = [];
+    let isAdmin = false;
     let roomUnsub = null;
+    let roomDocUnsub = null;
+    let roomConfigSeeded = false;
+    let roomDaysSaveTimer = null;
     let scheduleClosed = false;
     let app = null;
     let auth = null;
     let authUser = null;
+    let authMode = "";
     let db = null;
     let roomDebounce = null;
+    updateTzPill();
 
     // ---------- Theme ----------
     function applyTheme(theme){
@@ -553,6 +708,59 @@
         const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
         applyTheme(prefersDark ? "dark" : "light");
       }
+    }
+
+    // ---------- Time zone ----------
+    function updateTzPill(){
+      if(!elTzPill) return;
+      const note = authUser ? "change below" : "you can change this by signing in";
+      elTzPill.textContent = `Your time zone: ${userTz} (${note})`;
+    }
+
+    function isValidTimeZone(tz){
+      if(!tz) return false;
+      try{
+        Intl.DateTimeFormat("en-US", { timeZone: tz }).format();
+        return true;
+      }catch{
+        return false;
+      }
+    }
+
+    function safeTimeZone(tz){
+      if(isValidTimeZone(tz)) return tz;
+      if(isValidTimeZone(deviceTz)) return deviceTz;
+      return "UTC";
+    }
+
+    function setUserTimeZone(nextTz, { save = true, showToast = true } = {}){
+      const trimmed = String(nextTz || "").trim();
+      const candidate = trimmed || deviceTz;
+      if(!isValidTimeZone(candidate)){
+        if(showToast) toast("Enter a valid IANA time zone.");
+        return false;
+      }
+      if(candidate === userTz) return true;
+      userTz = candidate;
+      if(elTzInput) elTzInput.value = candidate;
+      updateTzPill();
+      renderSlots();
+      if(save) autoSaveIfIdentified();
+      return true;
+    }
+
+    function initTimeZoneOptions(){
+      if(!elTzOptions) return;
+      if(typeof Intl.supportedValuesOf !== "function") return;
+      const zones = Intl.supportedValuesOf("timeZone");
+      elTzOptions.innerHTML = zones.map(zone => `<option value="${zone}"></option>`).join("");
+    }
+
+    function commitTimeZoneInput(){
+      if(!authUser) return toast("Sign in to change time zone.");
+      if(!elTzInput) return;
+      const ok = setUserTimeZone(elTzInput.value, { save: true, showToast: true });
+      if(!ok) elTzInput.value = userTz;
     }
 
     // ---------- Toast ----------
@@ -630,13 +838,6 @@
         authUser = user || null;
         updateAuthUI();
 
-        if(authUser && authUser.email){
-          elEmail.value = authUser.email.toLowerCase();
-          elEmail.readOnly = true;
-        }else{
-          elEmail.readOnly = false;
-        }
-
         if(authUser && authUser.displayName && !elName.value.trim()){
           elName.value = authUser.displayName;
         }
@@ -645,10 +846,24 @@
           roomUnsub();
           roomUnsub = null;
         }
+        if(!authUser && roomDocUnsub){
+          roomDocUnsub();
+          roomDocUnsub = null;
+        }
 
         if(!authUser){
           roomMembers = {};
           userSelections = new Set();
+          roomDays = DEFAULT_ROOM_DAYS.slice();
+          roomDaysSet = new Set(roomDays);
+          activeDay = roomDays[0] || "";
+          roomOpen = true;
+          roomStatusUpdatedAt = null;
+          roomStatusByName = "";
+          roomStatusByEmail = "";
+          roomAdmins = [];
+          isAdmin = false;
+          setUserTimeZone(deviceTz, { save: false, showToast: false });
         }
 
         setRoomFromInput();
@@ -664,11 +879,65 @@
         elAuthPassword.value = "";
         elAuthControls.style.display = "none";
         elSignOutBtn.style.display = "inline-flex";
+        elAuthProfile.style.display = "block";
+        elName.disabled = false;
+        if(elTzInput){
+          elTzInput.disabled = false;
+          elTzInput.value = userTz;
+        }
+        if(elTzResetBtn) elTzResetBtn.disabled = false;
       }else{
         elAuthStatus.textContent = "Not signed in";
         elAuthControls.style.display = "block";
         elSignOutBtn.style.display = "none";
+        elAuthProfile.style.display = "none";
+        elName.disabled = true;
+        if(elTzInput){
+          elTzInput.disabled = true;
+          elTzInput.value = userTz;
+        }
+        if(elTzResetBtn) elTzResetBtn.disabled = true;
+        setAuthMode("");
       }
+      updateAdminState();
+      updateTzPill();
+    }
+
+    function setAuthMode(mode){
+      authMode = mode || "";
+      const hasMode = !!authMode;
+      const showEmail = authMode === "signin" || authMode === "signup" || authMode === "emaillink";
+      const showPassword = authMode === "signin" || authMode === "signup";
+
+      elAuthFields.classList.toggle("active", hasMode);
+      elAuthEmailField.style.display = showEmail ? "block" : "none";
+      elAuthPasswordField.style.display = showPassword ? "block" : "none";
+      elAuthSubmitBtn.style.display = hasMode ? "inline-flex" : "none";
+
+      const labelMap = {
+        signin: "Sign in",
+        signup: "Create account",
+        emaillink: "Send email link"
+      };
+      elAuthSubmitBtn.textContent = labelMap[authMode] || "Continue";
+      elAuthHint.textContent = authMode === "emaillink"
+        ? "We will email you a sign-in link."
+        : "";
+
+      elSignInBtn.setAttribute("aria-expanded", authMode === "signin" ? "true" : "false");
+      elSignUpBtn.setAttribute("aria-expanded", authMode === "signup" ? "true" : "false");
+      elEmailLinkBtn.setAttribute("aria-expanded", authMode === "emaillink" ? "true" : "false");
+      elSignInBtn.classList.toggle("active", authMode === "signin");
+      elSignUpBtn.classList.toggle("active", authMode === "signup");
+      elEmailLinkBtn.classList.toggle("active", authMode === "emaillink");
+
+      if(showEmail) elAuthEmail.focus();
+    }
+
+    function submitAuth(){
+      if(authMode === "signin") return void signInEmail();
+      if(authMode === "signup") return void signUpEmail();
+      if(authMode === "emaillink") return void sendEmailLink();
     }
 
     function authErrorMessage(err){
@@ -798,25 +1067,162 @@
       return normalizeRoom(elRoom.value);
     }
 
+    function normalizeRoomDays(days){
+      const set = new Set((days || []).map(d => String(d).toLowerCase()));
+      const ordered = DAY_OPTIONS.filter(d => set.has(d.id)).map(d => d.id);
+      return ordered.length ? ordered : DEFAULT_ROOM_DAYS.slice();
+    }
+
+    function dayLabelShort(dayId){
+      return DAY_LOOKUP.get(dayId)?.short || dayId;
+    }
+
+    function dayLabelLong(dayId){
+      return DAY_LOOKUP.get(dayId)?.long || dayId;
+    }
+
+    function slotKey(dayId, hour){
+      return `${dayId}-${slotKeyFromHour(hour)}`;
+    }
+
+    function parseSlotKey(slotKey){
+      const raw = String(slotKey || "");
+      const parts = raw.split("-", 2);
+      if(parts.length < 2) return { dayId: "", time: raw };
+      return { dayId: parts[0], time: parts[1] };
+    }
+
+    function isAllowedSlot(slotKey){
+      const { dayId, time } = parseSlotKey(slotKey);
+      return roomDaysSet.has(dayId) && SLOT_TIME_SET.has(time);
+    }
+
+    function isKnownSlot(slotKey){
+      const { dayId, time } = parseSlotKey(slotKey);
+      return DAY_LOOKUP.has(dayId) && SLOT_TIME_SET.has(time);
+    }
+
+    function filterSlots(slots){
+      if(!Array.isArray(slots)) return [];
+      return slots.filter(isAllowedSlot);
+    }
+
+    function normalizeUserSelections(slots){
+      if(!Array.isArray(slots)) return [];
+      return slots.filter(isKnownSlot);
+    }
+
+    function slotSortValue(slotKey){
+      const { dayId, time } = parseSlotKey(slotKey);
+      const dayIndex = DAY_ORDER.has(dayId) ? DAY_ORDER.get(dayId) : 99;
+      const hour = Number(time.slice(0,2));
+      return (dayIndex * 100) + (Number.isFinite(hour) ? hour : 0);
+    }
+
+    function applyRoomDays(days){
+      roomDays = normalizeRoomDays(days);
+      roomDaysSet = new Set(roomDays);
+      if(!roomDaysSet.has(activeDay)) activeDay = roomDays[0] || "";
+      renderDayControls();
+      updateHiddenDaysHint();
+    }
+
+    function updateRoomLabel(){
+      if(!elSlotRoomLabel) return;
+      const rk = activeRoom || roomKey();
+      elSlotRoomLabel.textContent = rk || "";
+    }
+
+    function updateHiddenDaysHint(){
+      if(!elHiddenDaysHint) return;
+      const hidden = new Set();
+      for(const s of userSelections){
+        if(!isKnownSlot(s)) continue;
+        const parsed = parseSlotKey(s);
+        if(parsed.dayId && !roomDaysSet.has(parsed.dayId)){
+          hidden.add(parsed.dayId);
+        }
+      }
+
+      if(hidden.size === 0){
+        elHiddenDaysHint.style.display = "none";
+        elHiddenDaysHint.textContent = "";
+        return;
+      }
+
+      const labels = Array.from(hidden)
+        .sort((a,b) => (DAY_ORDER.get(a) ?? 99) - (DAY_ORDER.get(b) ?? 99))
+        .map(dayLabelShort)
+        .join(", ");
+      elHiddenDaysHint.textContent = `Hidden selections on: ${labels}`;
+      elHiddenDaysHint.style.display = "block";
+    }
+
     function setRoomFromInput(){
       const normalized = roomKey();
       if(normalized !== elRoom.value) elRoom.value = normalized;
-      const needsResubscribe = normalized !== activeRoom || !roomUnsub;
+      const needsResubscribe = normalized !== activeRoom || !roomUnsub || !roomDocUnsub;
       if(!needsResubscribe) return;
 
       activeRoom = normalized;
+      roomConfigSeeded = false;
+      updateRoomLabel();
 
       if(roomUnsub){
         roomUnsub();
         roomUnsub = null;
       }
+      if(roomDocUnsub){
+        roomDocUnsub();
+        roomDocUnsub = null;
+      }
 
       roomMembers = {};
       userSelections = new Set();
+      roomDays = DEFAULT_ROOM_DAYS.slice();
+      roomDaysSet = new Set(roomDays);
+      activeDay = roomDays[0] || "";
+      roomOpen = true;
+      roomStatusUpdatedAt = null;
+      roomStatusByName = "";
+      roomStatusByEmail = "";
+      roomAdmins = [];
+      isAdmin = false;
       renderAll();
 
       if(!activeRoom) return;
       if(!ensureDb(false) || !ensureAuth(false)) return;
+
+      roomDocUnsub = onSnapshot(
+        doc(db, "rooms", activeRoom),
+        (docSnap) => {
+          const data = docSnap.data() || {};
+          if(Array.isArray(data.days)){
+            applyRoomDays(data.days);
+          }else{
+            applyRoomDays(DEFAULT_ROOM_DAYS);
+            if(!roomConfigSeeded){
+              roomConfigSeeded = true;
+              void saveRoomDays(DEFAULT_ROOM_DAYS, false);
+            }
+          }
+          roomOpen = typeof data.isOpen === "boolean" ? data.isOpen : true;
+          roomStatusUpdatedAt = data.statusUpdatedAt && typeof data.statusUpdatedAt.toDate === "function"
+            ? data.statusUpdatedAt.toDate()
+            : null;
+          roomStatusByName = typeof data.statusByName === "string" ? data.statusByName : "";
+          roomStatusByEmail = typeof data.statusByEmail === "string" ? data.statusByEmail : "";
+          roomAdmins = Array.isArray(data.admins)
+            ? data.admins.map(email => String(email).toLowerCase())
+            : [];
+          updateAdminState();
+          renderAll();
+        },
+        (err) => {
+          console.error(err);
+          toast("Unable to load room settings.");
+        }
+      );
 
       roomUnsub = onSnapshot(
         collection(db, "rooms", activeRoom, "members"),
@@ -858,7 +1264,7 @@
 
     function getUserEmail(){
       if(authUser && authUser.email) return authUser.email.toLowerCase();
-      return elEmail.value.trim().toLowerCase();
+      return "";
     }
 
     function isValidEmail(email){
@@ -873,6 +1279,25 @@
       const h12 = ((hour + 11) % 12) + 1;
       const ampm = hour >= 12 ? "PM" : "AM";
       return `${h12}:00 ${ampm}`;
+    }
+
+    function timeZoneAbbr(date, timeZone){
+      try{
+        const fmt = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" });
+        const part = fmt.formatToParts(date).find(p => p.type === "timeZoneName");
+        return part ? part.value : "";
+      }catch{
+        return "";
+      }
+    }
+
+    function etAbbr(hourEt){
+      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, ET_TIMEZONE);
+      return timeZoneAbbr(d, ET_TIMEZONE) || "ET";
+    }
+
+    function etLabelWithZone(hourEt){
+      return `${etLabel(hourEt)} ${etAbbr(hourEt)}`;
     }
 
     function makeZonedDate(year, month, day, hour, minute, timeZone, second = 0){
@@ -895,10 +1320,13 @@
     }
 
     function etToLocalLabel(hourEt){
-      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, "America/New_York");
-      return new Intl.DateTimeFormat(undefined, {
-        hour:"numeric", minute:"2-digit", hour12:true, timeZone:userTz
+      const d = makeZonedDate(REF_DATE.year, REF_DATE.month, REF_DATE.day, hourEt, 0, ET_TIMEZONE);
+      const tz = safeTimeZone(userTz);
+      const time = new Intl.DateTimeFormat(undefined, {
+        hour:"numeric", minute:"2-digit", hour12:true, timeZone: tz
       }).format(d);
+      const abbr = timeZoneAbbr(d, tz);
+      return abbr ? `${time} ${abbr}` : time;
     }
 
     function isSchedulingClosed(){
@@ -906,13 +1334,18 @@
     }
 
     function isInteractionLocked(){
-      return scheduleClosed || !authUser;
+      return scheduleClosed || !roomOpen || !authUser;
+    }
+
+    function lockMessage(){
+      if(scheduleClosed) return "Scheduling is closed.";
+      if(!roomOpen) return "Room is closed.";
+      if(!authUser) return "Sign in to continue.";
+      return "";
     }
 
     function updateScheduleStatus(){
       scheduleClosed = isSchedulingClosed();
-      elSchedulePill.textContent = scheduleClosed ? "Scheduling closed" : "Scheduling open";
-      elScheduleDot.style.background = scheduleClosed ? "var(--bad)" : "var(--good)";
       updateActionState();
     }
 
@@ -923,18 +1356,217 @@
         btn.disabled = disabled;
         btn.setAttribute("aria-disabled", disabled ? "true" : "false");
       });
+      updateRoomStatusUI();
+      updateAdminUI();
       renderSlots();
+    }
+
+    function updateAdminState(){
+      const email = getUserEmail();
+      isAdmin = !!email && roomAdmins.includes(email);
+    }
+
+    function updateAdminUI(){
+      if(!elResetRoomBtn || !elResetRoomNote || !elResetRoomNoteText) return;
+      const canReset = !!authUser && !!activeRoom && !!db && isAdmin;
+      elResetRoomBtn.disabled = !canReset;
+      elResetRoomBtn.classList.toggle("isDisabled", !canReset);
+      elResetRoomBtn.setAttribute("aria-disabled", canReset ? "false" : "true");
+
+      let note = "Admin only.";
+      if(!authUser) note = "Sign in to use admin tools.";
+      else if(!activeRoom) note = "Enter a room code to enable.";
+      else if(isAdmin) note = "Deletes all member selections.";
+      elResetRoomNoteText.textContent = note;
+    }
+
+    function updateRoomStatusUI(){
+      if(!elRoomStatusLabel || !elRoomStatusDot || !elRoomToggleBtn || !elRoomStatusMeta) return;
+      const isOpen = roomOpen !== false;
+      elRoomStatusLabel.textContent = isOpen ? "Room open" : "Room closed";
+      elRoomStatusDot.style.background = isOpen ? "var(--good)" : "var(--bad)";
+      elRoomToggleBtn.textContent = isOpen ? "Close room" : "Open room";
+
+      const canToggle = !!authUser && !!activeRoom && !!db;
+      elRoomToggleBtn.disabled = !canToggle;
+      elRoomToggleBtn.classList.toggle("isDisabled", !canToggle);
+      elRoomToggleBtn.setAttribute("aria-disabled", canToggle ? "false" : "true");
+
+      const actor = roomStatusByName && roomStatusByEmail
+        ? `${roomStatusByName} (${roomStatusByEmail})`
+        : (roomStatusByName || roomStatusByEmail);
+      const when = roomStatusUpdatedAt ? roomStatusUpdatedAt.toLocaleString() : "";
+      if(actor || when){
+        const verb = isOpen ? "Opened" : "Closed";
+        const who = actor ? ` by ${actor}` : "";
+        const time = when ? ` on ${when}` : "";
+        elRoomStatusMeta.textContent = `${verb}${who}${time}.`;
+        elRoomStatusMeta.style.display = "block";
+      }else{
+        elRoomStatusMeta.textContent = "";
+        elRoomStatusMeta.style.display = "none";
+      }
+    }
+
+    function renderDayControls(){
+      if(!elRoomDays || !elDayTabs || !elDaySelect) return;
+      const canEdit = !!authUser && !!activeRoom;
+
+      elRoomDays.innerHTML = DAY_OPTIONS.map((d) => {
+        const isActive = roomDaysSet.has(d.id);
+        const disabledClass = canEdit ? "" : " isDisabled";
+        const disabledAttr = canEdit ? "" : "disabled";
+        return `
+          <button type="button" class="dayChoice ${isActive ? "active" : ""}${disabledClass}" data-day="${d.id}"
+            aria-pressed="${isActive}" ${disabledAttr}>
+            ${d.short}
+          </button>`;
+      }).join("");
+
+      elDayTabs.innerHTML = roomDays.map((dayId) => {
+        const isActive = dayId === activeDay;
+        return `
+          <button type="button" class="dayTab ${isActive ? "active" : ""}" data-day="${dayId}"
+            aria-pressed="${isActive}">
+            ${dayLabelShort(dayId)}
+          </button>`;
+      }).join("");
+
+      elDaySelect.innerHTML = roomDays.map((dayId) =>
+        `<option value="${dayId}">${dayLabelLong(dayId)}</option>`
+      ).join("");
+      elDaySelect.value = activeDay || "";
+      elDaySelect.disabled = roomDays.length === 0;
+    }
+
+    function setActiveDay(dayId){
+      if(!roomDaysSet.has(dayId)) return;
+      activeDay = dayId;
+      renderDayControls();
+      renderSlots();
+    }
+
+    function toggleRoomDay(dayId){
+      if(!ensureAuth()) return;
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code to set room days.");
+
+      const next = new Set(roomDays);
+      if(next.has(dayId)){
+        if(next.size === 1) return toast("Select at least one day.");
+        next.delete(dayId);
+      }else{
+        next.add(dayId);
+      }
+
+      const ordered = DAY_OPTIONS.filter(d => next.has(d.id)).map(d => d.id);
+      applyRoomDays(ordered);
+      renderAll();
+      scheduleRoomDaysSave();
+    }
+
+    function scheduleRoomDaysSave(){
+      clearTimeout(roomDaysSaveTimer);
+      roomDaysSaveTimer = setTimeout(() => {
+        void saveRoomDays(roomDays, false);
+      }, 400);
+    }
+
+    async function saveRoomDays(days, showToast=true){
+      const rk = ensureActiveRoom();
+      if(!rk) return;
+      if(!ensureDb(false) || !ensureAuth(false)) return;
+
+      const payload = {
+        days,
+        updatedAt: serverTimestamp()
+      };
+
+      try{
+        await setDoc(doc(db, "rooms", rk), payload, { merge: true });
+        if(showToast) toast("Room days updated.");
+      }catch(err){
+        console.error(err);
+        if(showToast) toast("Failed to update room days.");
+      }
+    }
+
+    async function resetRoom(){
+      if(!ensureAuth()) return;
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code first.");
+      if(!ensureDb()) return;
+      if(!isAdmin) return toast("Admin access required.");
+
+      const confirmed = window.confirm(`Reset all selections for "${rk}"? This deletes all member entries.`);
+      if(!confirmed) return;
+
+      try{
+        const snapshot = await getDocs(collection(db, "rooms", rk, "members"));
+        if(snapshot.empty){
+          userSelections = new Set();
+          renderSlots();
+          return toast("Room already empty.");
+        }
+
+        let batch = writeBatch(db);
+        let count = 0;
+        for(const docSnap of snapshot.docs){
+          batch.delete(docSnap.ref);
+          count += 1;
+          if(count % 400 === 0){
+            await batch.commit();
+            batch = writeBatch(db);
+          }
+        }
+        await batch.commit();
+
+        userSelections = new Set();
+        renderSlots();
+        toast("Room reset complete.");
+      }catch(err){
+        console.error(err);
+        toast("Room reset failed.");
+      }
+    }
+
+    async function toggleRoomStatus(){
+      if(!ensureAuth()) return;
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code to update room status.");
+      if(!ensureDb()) return;
+
+      const name = elName.value.trim() || (authUser && authUser.displayName) || "";
+      const email = getUserEmail();
+      const nextOpen = !roomOpen;
+      const payload = {
+        isOpen: nextOpen,
+        statusUpdatedAt: serverTimestamp(),
+        statusByName: name,
+        statusByEmail: email
+      };
+
+      try{
+        await setDoc(doc(db, "rooms", rk), payload, { merge: true });
+        toast(nextOpen ? "Room opened." : "Room closed.");
+      }catch(err){
+        console.error(err);
+        toast("Failed to update room status.");
+      }
     }
 
     // ---------- Counts / common slots ----------
     function computeCounts(){
       const members = Object.values(roomMembers);
       const counts = {};
-      SLOT_START_HOURS_ET.forEach(h => counts[slotKeyFromHour(h)] = 0);
+      for(const dayId of roomDays){
+        SLOT_START_HOURS_ET.forEach(h => counts[slotKey(dayId, h)] = 0);
+      }
 
       for(const m of members){
-        if(!Array.isArray(m.slots)) continue;
-        for(const s of m.slots){
+        const slots = filterSlots(m.slots);
+        if(!slots.length) continue;
+        for(const s of slots){
           if(counts[s] !== undefined) counts[s] += 1;
         }
       }
@@ -954,12 +1586,18 @@
     // ---------- Rendering ----------
     function renderSlots(){
       elSlotGrid.innerHTML = "";
+      updateHiddenDaysHint();
       const { counts, memberCount } = computeCounts();
       const common = commonSlots();
       const locked = isInteractionLocked();
 
+      if(!activeDay){
+        elSlotGrid.innerHTML = `<div class="memberCard"><div class="memberName">No days selected</div><div class="memberEmail">Select at least one day for this room.</div></div>`;
+        return;
+      }
+
       for(const hourEt of SLOT_START_HOURS_ET){
-        const key = slotKeyFromHour(hourEt);
+        const key = slotKey(activeDay, hourEt);
 
         const btn = document.createElement("button");
         btn.type = "button";
@@ -978,18 +1616,19 @@
 
         btn.innerHTML = `
           <div class="top">
-            <div class="labelEt">${etLabel(hourEt)} ET</div>
+            <div class="labelEt">${etLabel(hourEt)}</div>
             <div class="count">
               <span>${count}/${memberCount || 0}</span>
               <span class="miniBar" aria-hidden="true"><span style="width:${pct}%"></span></span>
             </div>
           </div>
-          <div class="labelLocal" style="display:${showLocal ? "block":"none"}">${local} (your time)</div>
-          <div class="labelLocal" style="display:${showLocal ? "none":"block"}">${etLabel(hourEt)} (ET)</div>
+          <div class="labelLocal" style="display:${showLocal ? "block":"none"}">${local} (LT)</div>
+          <div class="labelLocal" style="display:${showLocal ? "none":"block"}">${etLabelWithZone(hourEt)}</div>
         `;
 
         btn.addEventListener("click", () => {
-          if(isInteractionLocked()) return toast(scheduleClosed ? "Scheduling is closed." : "Sign in to continue.");
+          const msg = lockMessage();
+          if(msg) return toast(msg);
           if(!ensureActiveRoom()) return toast("Enter a room code first.");
           toggleSlot(key);
         });
@@ -1027,8 +1666,10 @@
       members.sort((a,b) => (b.updatedAt ? b.updatedAt.getTime() : 0) - (a.updatedAt ? a.updatedAt.getTime() : 0));
 
       for(const m of members){
-        const chips = (m.slots && m.slots.length)
-          ? m.slots.slice().sort().map(s => `<span class="chip">${slotLabelCompact(s)}</span>`).join("")
+        const slots = filterSlots(m.slots);
+        const chips = slots.length
+          ? slots.slice().sort((a,b) => slotSortValue(a) - slotSortValue(b))
+            .map(s => `<span class="chip">${slotLabelCompact(s)}</span>`).join("")
           : `<span class="chip none">No slots selected</span>`;
 
         const updated = m.updatedAt || null;
@@ -1053,10 +1694,14 @@
     }
 
     function slotLabelCompact(slotKey){
-      const hour = Number(slotKey.slice(0,2));
+      const parsed = parseSlotKey(slotKey);
+      const time = parsed.time || "";
+      const hour = Number(time.slice(0,2));
+      if(!Number.isFinite(hour)) return slotKey;
       const h12 = ((hour + 11) % 12) + 1;
       const ampm = hour >= 12 ? "PM" : "AM";
-      return `${h12}${ampm} ET`;
+      const dayLabel = parsed.dayId ? `${dayLabelShort(parsed.dayId)} ` : "";
+      return `${dayLabel}${h12}${ampm} ${etAbbr(hour)}`;
     }
 
     function escapeHtml(str){
@@ -1069,7 +1714,9 @@
     }
 
     function renderAll(){
-      renderSlots();
+      updateRoomLabel();
+      renderDayControls();
+      updateActionState();
       renderMembers();
     }
 
@@ -1082,7 +1729,7 @@
     }
 
     function autoSaveIfIdentified(){
-      if(scheduleClosed || !db || !authUser) return;
+      if(scheduleClosed || !roomOpen || !db || !authUser) return;
       const rk = roomKey();
       const name = elName.value.trim();
       const email = getUserEmail();
@@ -1093,6 +1740,7 @@
 
     async function saveMe(showToast=true){
       if(scheduleClosed) return toast("Scheduling is closed.");
+      if(!roomOpen) return toast("Room is closed.");
       const rk = ensureActiveRoom();
       const name = elName.value.trim();
       const email = getUserEmail();
@@ -1107,7 +1755,7 @@
         name,
         email,
         tz: userTz,
-        slots: Array.from(userSelections),
+        slots: normalizeUserSelections(Array.from(userSelections)),
         updatedAt: serverTimestamp()
       };
 
@@ -1122,6 +1770,7 @@
 
     async function clearMyPicks(){
       if(scheduleClosed) return toast("Scheduling is closed.");
+      if(!roomOpen) return toast("Room is closed.");
       const rk = ensureActiveRoom();
       const name = elName.value.trim();
       const email = getUserEmail();
@@ -1171,6 +1820,7 @@
 
       const payload = {
         room: rk,
+        days: roomDays,
         exportedAt: new Date().toISOString(),
         members
       };
@@ -1189,7 +1839,7 @@
 
     function toggleLocal(){
       showLocal = !showLocal;
-      elToggleLocal.textContent = showLocal ? "Your local time" : "Eastern Time";
+      elToggleLocal.textContent = showLocal ? "Your local time (LT)" : "US Eastern Time";
       renderSlots();
     }
 
@@ -1202,17 +1852,13 @@
       if(!me) return;
 
       if(!elName.value.trim()) elName.value = me.name || "";
-      userSelections = new Set(Array.isArray(me.slots) ? me.slots : []);
-    }
-
-    function maybePrefill(){
-      if(!activeRoom) return;
-      syncFromSnapshot();
-      renderAll();
+      if(me.tz) setUserTimeZone(me.tz, { save: false, showToast: false });
+      userSelections = new Set(normalizeUserSelections(me.slots));
     }
 
     function onRoomInput(){
       clearTimeout(roomDebounce);
+      updateRoomLabel();
       roomDebounce = setTimeout(setRoomFromInput, 250);
     }
 
@@ -1225,34 +1871,71 @@
     elSaveBtn.addEventListener("click", () => void saveMe(true));
     elClearMeBtn.addEventListener("click", () => void clearMyPicks());
     elExportBtn.addEventListener("click", exportJson);
+    elResetRoomBtn.addEventListener("click", () => void resetRoom());
     elToggleLocal.addEventListener("click", toggleLocal);
     elThemeBtn.addEventListener("click", toggleTheme);
     elCopyRoomBtn.addEventListener("click", copyRoomCode);
-    elSignInBtn.addEventListener("click", () => void signInEmail());
-    elSignUpBtn.addEventListener("click", () => void signUpEmail());
-    elEmailLinkBtn.addEventListener("click", () => void sendEmailLink());
+    elSignInBtn.addEventListener("click", () => setAuthMode("signin"));
+    elSignUpBtn.addEventListener("click", () => setAuthMode("signup"));
+    elEmailLinkBtn.addEventListener("click", () => setAuthMode("emaillink"));
     elGoogleBtn.addEventListener("click", () => void signInGoogle());
     elSignOutBtn.addEventListener("click", () => void signOutUser());
+    elAuthSubmitBtn.addEventListener("click", submitAuth);
+    elRoomToggleBtn.addEventListener("click", () => void toggleRoomStatus());
+
+    elRoomDays.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-day]");
+      if(!btn) return;
+      toggleRoomDay(btn.dataset.day);
+    });
+
+    elDayTabs.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-day]");
+      if(!btn) return;
+      setActiveDay(btn.dataset.day);
+    });
+
+    elDaySelect.addEventListener("change", (e) => {
+      setActiveDay(e.target.value);
+    });
 
     elRoom.addEventListener("input", onRoomInput);
     elRoom.addEventListener("blur", onRoomCommit);
     elRoom.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); onRoomCommit(); } });
 
-    elEmail.addEventListener("blur", maybePrefill);
-    elEmail.addEventListener("keydown", (e) => { if(e.key === "Enter") { e.preventDefault(); maybePrefill(); } });
-
     elName.addEventListener("input", autoSaveIfIdentified);
-    elEmail.addEventListener("input", autoSaveIfIdentified);
     elAuthPassword.addEventListener("keydown", (e) => {
       if(e.key === "Enter"){
         e.preventDefault();
-        void signInEmail();
+        submitAuth();
       }
     });
+    elAuthEmail.addEventListener("keydown", (e) => {
+      if(e.key !== "Enter") return;
+      e.preventDefault();
+      if(authMode === "emaillink") return submitAuth();
+      if(authMode === "signin" || authMode === "signup") return elAuthPassword.focus();
+    });
+    if(elTzInput){
+      elTzInput.addEventListener("change", commitTimeZoneInput);
+      elTzInput.addEventListener("keydown", (e) => {
+        if(e.key !== "Enter") return;
+        e.preventDefault();
+        commitTimeZoneInput();
+      });
+    }
+    if(elTzResetBtn){
+      elTzResetBtn.addEventListener("click", () => {
+        if(!authUser) return toast("Sign in to change time zone.");
+        setUserTimeZone(deviceTz, { save: true, showToast: false });
+        toast("Time zone reset to device.");
+      });
+    }
 
     // ---------- Init ----------
     (function init(){
       initTheme();
+      initTimeZoneOptions();
       initFirebase();
       handleEmailLinkSignIn();
       updateScheduleStatus();

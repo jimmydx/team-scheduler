@@ -30,14 +30,46 @@ These rules require sign-in and only allow the expected fields to be written.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isRoomAdmin(roomId) {
+      return isSignedIn()
+        && request.auth.token.email != null
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.admins != null
+        && get(/databases/$(database)/documents/rooms/$(roomId)).data.admins.hasAny([request.auth.token.email]);
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['days','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail']);
+      allow update: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['days','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail','admins'])
+        && request.resource.data.admins == resource.data.admins;
+      allow delete: if isRoomAdmin(roomId);
+    }
     match /rooms/{roomId}/members/{memberId} {
-      allow read, create, update: if request.auth != null
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.resource.data.keys().hasOnly(['name','email','tz','slots','updatedAt']);
-      allow delete: if false;
+      allow delete: if isRoomAdmin(roomId);
     }
   }
 }
 ```
+
+Room days are saved in the room document (`rooms/{roomId}`) as `days: ["mon","tue",...]` and can be edited from the UI.
+Room open/closed status is saved in the room document as `isOpen` with `statusByName`, `statusByEmail`, and `statusUpdatedAt`.
+
+## Admin reset (optional)
+To enable the “Reset room” button, add an `admins` array to the room document in Firestore (lowercase emails):
+
+```json
+admins: ["you@example.com"]
+```
+
+Sign in with one of those emails; the Reset button will be enabled and will delete all member entries for that room.
 
 ## GitHub Pages hosting
 1) Push this repo to GitHub.
