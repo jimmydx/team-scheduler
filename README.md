@@ -1,80 +1,58 @@
-# Team Scheduler (Single-File)
+# Team Scheduler - How to Use
 
-## Firebase setup (first time)
-1) Go to https://console.firebase.google.com and sign in with a Google account.
-2) Click "Add project", enter a name, optionally disable Google Analytics, then click "Create project".
-3) In the left sidebar, go to Build -> Firestore Database, click "Create database", choose a mode (test or production), pick a region, then click "Enable".
-4) Back in Project Overview, click the web icon (`</>`) to add a Web App.
-5) Give the app a nickname, leave hosting unchecked, and click "Register app".
-6) Copy the firebaseConfig object shown and paste it into `index.html` at:
-   `const firebaseConfig = { /* TODO: paste Firebase config here */ };`
-7) Save `index.html` and reload the page.
+This is a single-page team scheduler. Everyone works in a shared room, chooses available time slots, and sees team convergence in real time.
 
-## Authentication setup (required)
-1) In Firebase Console, go to Build -> Authentication and click "Get started".
-2) Under Sign-in method, enable:
-   - **Email/Password**
-   - **Email link (passwordless)** (enable the toggle)
-   - **Google** (choose a support email and save)
-3) In Authentication -> Settings -> Authorized domains, add any domains you will use:
-   - `localhost` (local testing)
-   - your GitHub Pages domain (e.g., `yourname.github.io`)
-4) Email link sign-in requires an http(s) URL. If you are testing locally, open the page via a local server (not `file://`), for example:
-   `python3 -m http.server`
-   then visit `http://localhost:8000`
+## 1) Sign in
+Choose one of the sign-in methods in the Access panel:
+- Google sign-in
+- Email and password
+- Email link (passwordless)
 
-## Firestore rules (auth required, allowed fields only)
-These rules require sign-in and only allow the expected fields to be written.
+You must be signed in to view room data and save your selections.
 
-```firestore
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    function isRoomAdmin(roomId) {
-      return isSignedIn()
-        && request.auth.token.email != null
-        && get(/databases/$(database)/documents/rooms/$(roomId)).data.admins != null
-        && get(/databases/$(database)/documents/rooms/$(roomId)).data.admins.hasAny([request.auth.token.email]);
-    }
+## 2) Load a room
+1) Enter the Room code / Team name.
+2) Click **Load** to open the room.
 
-    match /rooms/{roomId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['days','preferredTz','dateStart','dateEnd','meetingMinutes','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail']);
-      allow update: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['days','preferredTz','dateStart','dateEnd','meetingMinutes','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail','admins'])
-        && request.resource.data.admins == resource.data.admins;
-      allow delete: if isRoomAdmin(roomId);
-    }
-    match /rooms/{roomId}/members/{memberId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['name','email','tz','slots','comments','updatedAt']);
-      allow delete: if isRoomAdmin(roomId);
-    }
-  }
-}
-```
+Room codes are lowercased and spaces become hyphens.
 
-Room days are saved in the room document (`rooms/{roomId}`) as `days: ["mon","tue",...]` and can be edited from the UI.
-Room scheduling settings are saved as `preferredTz` (IANA time zone), `dateStart`/`dateEnd` (YYYY-MM-DD), and `meetingMinutes` (integer minutes).
-Member submissions also include an optional `comments` field.
-Room open/closed status is saved in the room document as `isOpen` with `statusByName`, `statusByEmail`, and `statusUpdatedAt`.
+## 3) Room settings (left panel)
+These apply to everyone in the room:
+- **Preferred time zone**: the room's default time base.
+- **Scheduled dates**: date range for the scheduling period.
+- **Meeting duration (minutes)**: default 60.
+- **Active days**: choose which weekdays are available.
+- **Room status**: open or closed. Closing the room disables edits.
 
-## Admin reset (optional)
-To enable the “Reset room” button, add an `admins` array to the room document in Firestore (lowercase emails):
+## 4) Pick your availability
+- Select 30-minute slots in the grid.
+- Use **Save / Update** to submit your picks.
+- Use **Clear my picks** to remove your selections.
 
-```json
-admins: ["you@example.com"]
-```
+## 5) Time display
+- The toggle "Showing times in" switches the bold time between your local time and the room's default time.
+- Each slot shows two subtitle rows: local time and room time.
 
-Sign in with one of those emails; the Reset button will be enabled and will delete all member entries for that room.
+## 6) Comments
+Click **Comments** (next to the day pills) to add notes for the room.
+Your comments are saved with your entry and shown under your slots in the team list.
 
-## GitHub Pages hosting
-1) Push this repo to GitHub.
-2) In GitHub, go to Settings -> Pages.
-3) Select "Deploy from a branch", choose your branch (e.g., `main`) and `/root`.
-4) Save, then wait for the Pages URL to appear.
+## 7) Ranking vs heatmap
+At the bottom of the scheduler:
+- **Graph** (default) shows a heatmap of availability. The star means full-team availability.
+- **Ranking** shows the top 7 most chosen time slots.
+
+## 8) Team selections list
+The team list shows each member's:
+- Name and email
+- Time zone (with GMT offset)
+- Selected slots
+- Comments (if any)
+
+## 9) Export and reset
+- **Export JSON** downloads the current room data.
+- **Reset room (admin only)** clears all member entries for the room.
+  Admins must be configured in Firebase.
+
+## Firebase setup
+See `FIREBASE_SETUP.md` for Firebase configuration, rules, and admin setup.
