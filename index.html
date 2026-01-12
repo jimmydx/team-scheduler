@@ -191,7 +191,9 @@
       border-color:color-mix(in srgb, var(--accent) 55%, transparent);
       background: var(--slotBgHover);
     }
-    .authFields{display:none;flex-direction:column;gap:10px;margin-top:6px;}
+    .authFields{display:none;flex-direction:column;gap:6px;margin-top:6px;}
+    .authFields .field{margin-bottom:0;}
+    #authHint{margin-top:6px;}
     .authFields.active{display:flex;}
     .authProfile{margin-top:10px;}
     .authNote{text-align:center;}
@@ -411,6 +413,16 @@
     }
     button:hover{transform: translateY(-1px); border-color:color-mix(in srgb, var(--accent) 55%, transparent);}
     button:active{transform: translateY(0);}
+    .btnLink{
+      border:none;
+      background:none;
+      padding:0;
+      font-size:12px;
+      color:var(--accent);
+      text-decoration:underline;
+      cursor:pointer;
+    }
+    .btnLink:hover{color:color-mix(in srgb, var(--accent) 80%, #000);}
 
     button.isDisabled,
     .slot.isDisabled{
@@ -646,18 +658,19 @@
                     <label for="authPassword">Password</label>
                     <input id="authPassword" type="password" placeholder="••••••••" autocomplete="current-password" />
                   </div>
-                  <div class="row" style="justify-content:flex-start">
+                  <div class="row" style="justify-content:flex-start;align-items:center;gap:10px">
                     <button id="authSubmitBtn" type="button">Continue</button>
+                    <button id="forgotPasswordBtn" class="btnLink" type="button" style="display:none">Forgot password?</button>
                   </div>
                   <div class="hint footnote" id="authHint"></div>
                 </div>
               </div>
-              <div id="authProfile" class="authProfile" style="display:none">
-                <div class="field">
-                  <label for="name">Display name</label>
-                  <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
-                  <div class="hint footnote">Shown in the team list.</div>
-                </div>
+                <div id="authProfile" class="authProfile" style="display:none">
+                  <div class="field">
+                    <label for="name">Display name</label>
+                    <input id="name" placeholder="e.g., Alex Johnson" autocomplete="name" />
+                    <div class="hint footnote">Shown in the team list.</div>
+                  </div>
                 <div class="field">
                   <label for="tzSelect">Time zone</label>
                   <select id="tzSelect" class="tzSelect" aria-label="Select time zone"></select>
@@ -666,6 +679,9 @@
                     <button id="tzResetBtn" class="btnSubtle" type="button">Use device time zone</button>
                   </div>
                 </div>
+              </div>
+              <div class="row" style="justify-content:flex-end">
+                <button class="saveAction" data-action="save" type="button">Save / Update</button>
               </div>
             </div>
           </div>
@@ -709,6 +725,12 @@
             </div>
 
             <div class="field">
+              <label for="roomExpectedMembers">Expected team members (optional)</label>
+              <input id="roomExpectedMembers" type="number" min="1" step="1" placeholder="Auto" />
+              <div class="hint footnote">Use to track missing submissions.</div>
+            </div>
+
+            <div class="field">
               <label>Active days for current room/team:</label>
               <div class="dayChoices" id="roomDays"></div>
             </div>
@@ -725,9 +747,8 @@
               <div class="hint footnote roomMeta" id="roomStatusMeta" style="display:none"></div>
             </div>
 
-            <div class="row" style="margin-top:14px">
-              <button id="saveBtn" type="button">Save / Update</button>
-              <button id="clearMeBtn" class="btnDanger" type="button">Clear my picks</button>
+            <div class="row" style="margin-top:14px;justify-content:flex-end">
+              <button id="saveBtn" class="saveAction" data-action="save" type="button">Save / Update</button>
             </div>
           </div>
         </section>
@@ -743,6 +764,7 @@
           <div style="text-align:right">
             <div style="color:var(--muted); font-size:12px">Members submitted</div>
             <div style="font-weight:900; font-size:20px" id="memberCount">0</div>
+            <div style="color:var(--muted); font-size:11px" id="memberCountMeta"></div>
           </div>
         </div>
 
@@ -772,6 +794,7 @@
           <div class="keyItem" style="gap:10px">
             <span style="color:var(--muted)">Showing times in:</span>
             <button id="toggleLocal" type="button" style="padding:9px 10px">Your local time</button>
+            <button id="clearMeBtn" class="btnDanger" data-action="clear-me" type="button">Clear picks</button>
           </div>
         </div>
 
@@ -824,7 +847,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
     import { getFirestore, doc, setDoc, collection, onSnapshot, serverTimestamp, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -873,6 +896,7 @@
     const elRoomDateStart = document.getElementById("roomDateStart");
     const elRoomDateEnd = document.getElementById("roomDateEnd");
     const elRoomMeetingMinutes = document.getElementById("roomMeetingMinutes");
+    const elRoomExpectedMembers = document.getElementById("roomExpectedMembers");
     const elDayTabs = document.getElementById("dayTabs");
     const elDaySelect = document.getElementById("daySelect");
     const elHiddenDaysHint = document.getElementById("hiddenDaysHint");
@@ -882,6 +906,7 @@
     const elTimeModeNote = document.getElementById("timeModeNote");
     const elMembers = document.getElementById("members");
     const elMemberCount = document.getElementById("memberCount");
+    const elMemberCountMeta = document.getElementById("memberCountMeta");
     const elSlotRoomLabel = document.getElementById("slotRoomLabel");
     const elRoomListLabel = document.getElementById("roomListLabel");
     const elTopSlots = document.getElementById("topSlots");
@@ -898,8 +923,8 @@
     const elRoomStatusMeta = document.getElementById("roomStatusMeta");
     const elRoomToggleBtn = document.getElementById("roomToggleBtn");
 
-    const elSaveBtn = document.getElementById("saveBtn");
-    const elClearMeBtn = document.getElementById("clearMeBtn");
+    const elSaveBtns = Array.from(document.querySelectorAll("[data-action=\"save\"]"));
+    const elClearMeBtns = Array.from(document.querySelectorAll("[data-action=\"clear-me\"]"));
     const elExportBtn = document.getElementById("exportBtn");
     const elResetRoomBtn = document.getElementById("resetRoomBtn");
     const elToggleLocal = document.getElementById("toggleLocal");
@@ -919,6 +944,7 @@
     const elAuthPasswordField = document.getElementById("authPasswordField");
     const elAuthSubmitBtn = document.getElementById("authSubmitBtn");
     const elAuthHint = document.getElementById("authHint");
+    const elForgotPasswordBtn = document.getElementById("forgotPasswordBtn");
     const elAuthProfile = document.getElementById("authProfile");
     const elAuthDebug = document.getElementById("authDebug");
     const elTzSelect = document.getElementById("tzSelect");
@@ -946,6 +972,7 @@
     let roomDateStart = "";
     let roomDateEnd = "";
     let roomMeetingMinutes = 60;
+    let roomExpectedMembers = 0;
     let showComments = false;
     let commentSaveTimer = null;
     let topView = "graph";
@@ -1273,6 +1300,9 @@
       elAuthEmailField.style.display = showEmail ? "block" : "none";
       elAuthPasswordField.style.display = showPassword ? "block" : "none";
       elAuthSubmitBtn.style.display = hasMode ? "inline-flex" : "none";
+      if(elForgotPasswordBtn){
+        elForgotPasswordBtn.style.display = authMode === "signin" ? "inline-flex" : "none";
+      }
 
       const labelMap = {
         signin: "Sign in",
@@ -1280,9 +1310,9 @@
         emaillink: "Send email link"
       };
       elAuthSubmitBtn.textContent = labelMap[authMode] || "Continue";
-      elAuthHint.textContent = authMode === "emaillink"
+      setAuthHint(authMode === "emaillink"
         ? "We will email you a sign-in link."
-        : "";
+        : "");
 
       elSignInBtn.setAttribute("aria-expanded", authMode === "signin" ? "true" : "false");
       elSignUpBtn.setAttribute("aria-expanded", authMode === "signup" ? "true" : "false");
@@ -1292,6 +1322,11 @@
       elEmailLinkBtn.classList.toggle("active", authMode === "emaillink");
 
       if(showEmail) elAuthEmail.focus();
+    }
+
+    function setAuthHint(msg){
+      if(!elAuthHint) return;
+      elAuthHint.textContent = msg || "";
     }
 
     function submitAuth(){
@@ -1314,9 +1349,27 @@
         "auth/operation-not-allowed": "Enable this sign-in method in Firebase Auth.",
         "auth/invalid-action-code": "Invalid or expired email link.",
         "auth/expired-action-code": "Email link expired. Request a new one.",
-        "auth/invalid-continue-uri": "Invalid sign-in link URL. Check authorized domains."
+        "auth/invalid-continue-uri": "Invalid sign-in link URL. Check authorized domains.",
+        "auth/missing-email": "Enter your email address.",
+        "auth/user-disabled": "This account is disabled.",
+        "auth/too-many-requests": "Too many attempts. Try again later."
       };
       return map[code] || "Authentication failed.";
+    }
+
+    async function sendPasswordReset(){
+      if(!auth) return toast("Add Firebase config first.");
+      const email = elAuthEmail.value.trim();
+      if(!email) return toast("Enter your email to reset your password.");
+      if(!isValidEmail(email)) return toast("Enter a valid email address.");
+      const actionUrl = getActionUrl();
+      if(!actionUrl) return toast("Password reset requires a hosted URL (not file://).");
+      try{
+        await sendPasswordResetEmail(auth, email, { url: actionUrl });
+        toast("Password reset email sent.");
+      }catch(err){
+        toast(authErrorMessage(err));
+      }
     }
 
     async function signInEmail(){
@@ -1438,6 +1491,27 @@
       if(!Number.isFinite(num)) return null;
       const rounded = Math.round(num);
       return rounded > 0 ? rounded : null;
+    }
+
+    function normalizeExpectedMembers(value){
+      const num = Number(value);
+      if(!Number.isFinite(num)) return 0;
+      const rounded = Math.floor(num);
+      return rounded >= 1 ? rounded : 0;
+    }
+
+    function getExpectedMemberTotal(memberCount){
+      const expected = normalizeExpectedMembers(roomExpectedMembers);
+      if(!expected) return memberCount;
+      return Math.max(memberCount, expected);
+    }
+
+    function formatMissingText(missingNames, unsubmittedCount){
+      if(!missingNames.length && !unsubmittedCount) return "Full team available";
+      const parts = [];
+      if(missingNames.length) parts.push(missingNames.join(", "));
+      if(unsubmittedCount) parts.push(`${unsubmittedCount} not submitted`);
+      return `Missing: ${parts.join(" + ")}`;
     }
 
     function dayLabelShort(dayId){
@@ -1619,6 +1693,11 @@
         elRoomMeetingMinutes.disabled = !canEdit;
         elRoomMeetingMinutes.setAttribute("aria-disabled", canEdit ? "false" : "true");
       }
+      if(elRoomExpectedMembers){
+        elRoomExpectedMembers.value = roomExpectedMembers ? String(roomExpectedMembers) : "";
+        elRoomExpectedMembers.disabled = !canEdit;
+        elRoomExpectedMembers.setAttribute("aria-disabled", canEdit ? "false" : "true");
+      }
     }
 
     function updateHiddenDaysHint(){
@@ -1679,6 +1758,7 @@
           roomDateStart = defaultDates.start;
           roomDateEnd = defaultDates.end;
           roomMeetingMinutes = 60;
+          roomExpectedMembers = 0;
           roomAdmins = [];
           isAdmin = false;
           setCommentsView(false);
@@ -1715,6 +1795,9 @@
           const meetingMinutes = normalizeMeetingMinutes(data.meetingMinutes);
           roomMeetingMinutes = meetingMinutes || 60;
           if(!meetingMinutes) seedPayload.meetingMinutes = roomMeetingMinutes;
+
+          const expectedMembers = normalizeExpectedMembers(data.expectedMembers);
+          roomExpectedMembers = expectedMembers;
 
           if(Object.keys(seedPayload).length && !roomConfigSeeded){
             roomConfigSeeded = true;
@@ -1960,7 +2043,7 @@
 
     function updateActionState(){
       const disabled = isInteractionLocked();
-      [elSaveBtn, elClearMeBtn].forEach((btn) => {
+      [...elSaveBtns, ...elClearMeBtns].forEach((btn) => {
         btn.classList.toggle("isDisabled", disabled);
         btn.disabled = disabled;
         btn.setAttribute("aria-disabled", disabled ? "true" : "false");
@@ -2141,6 +2224,29 @@
       void saveRoomSettings({ meetingMinutes: roomMeetingMinutes }, true);
     }
 
+    function commitRoomExpectedMembers(){
+      if(!ensureAuth()) return;
+      if(!roomOpen) return toast("Room is closed.");
+      const rk = ensureActiveRoom();
+      if(!rk) return toast("Enter a room code to update room settings.");
+      const raw = String(elRoomExpectedMembers.value || "").trim();
+      const rawValue = Number(raw);
+      if(raw && !Number.isFinite(rawValue)){
+        updateRoomSettingsUI();
+        return toast("Enter a valid expected member count.");
+      }
+      if(raw && rawValue < 0){
+        updateRoomSettingsUI();
+        return toast("Enter a valid expected member count.");
+      }
+      const nextExpected = normalizeExpectedMembers(rawValue);
+      roomExpectedMembers = nextExpected;
+      updateRoomSettingsUI();
+      renderSlots();
+      renderMembers();
+      void saveRoomSettings({ expectedMembers: roomExpectedMembers }, true);
+    }
+
     function scheduleRoomDaysSave(){
       clearTimeout(roomDaysSaveTimer);
       roomDaysSaveTimer = setTimeout(() => {
@@ -2261,14 +2367,16 @@
           if(counts[s] !== undefined) counts[s] += 1;
         }
       }
-      return { counts, memberCount: members.length };
+      const memberCount = members.length;
+      const totalCount = getExpectedMemberTotal(memberCount);
+      return { counts, memberCount, totalCount };
     }
 
-    function commonSlotsFromCounts(counts, memberCount){
-      if(memberCount === 0) return new Set();
+    function commonSlotsFromCounts(counts, totalCount){
+      if(totalCount === 0) return new Set();
       const common = new Set();
       for(const k of Object.keys(counts)){
-        if(counts[k] === memberCount) common.add(k);
+        if(counts[k] === totalCount) common.add(k);
       }
       return common;
     }
@@ -2278,9 +2386,9 @@
       hideCursorHint();
       elSlotGrid.innerHTML = "";
       updateHiddenDaysHint();
-      const { counts, memberCount } = computeCounts();
-      const common = commonSlotsFromCounts(counts, memberCount);
-      renderTopSlots(counts, memberCount);
+      const { counts, memberCount, totalCount } = computeCounts();
+      const common = commonSlotsFromCounts(counts, totalCount);
+      renderTopSlots(counts, memberCount, totalCount);
       const locked = isInteractionLocked();
 
       if(!activeDay){
@@ -2300,7 +2408,7 @@
         }
 
         if(userSelections.has(key)) btn.classList.add("selected");
-        if(common.has(key) && memberCount > 0) btn.classList.add("common");
+        if(common.has(key) && totalCount > 0) btn.classList.add("common");
 
         const localBold = timeOnlyInZone(minutes, userTz);
         const preferredBold = timeOnlyInZone(minutes, roomPreferredTz);
@@ -2308,13 +2416,13 @@
         const preferredLabel = timeLabelInZone(minutes, roomPreferredTz);
         const primaryLabel = showLocal ? localBold : preferredBold;
         const count = counts[key] || 0;
-        const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
+        const pct = totalCount ? Math.round((count / totalCount) * 100) : 0;
 
         btn.innerHTML = `
           <div class="top">
             <div class="labelEt">${primaryLabel}</div>
             <div class="count">
-              <span>${count}/${memberCount || 0}</span>
+              <span>${count}/${totalCount || 0}</span>
               <span class="miniBar" aria-hidden="true"><span style="width:${pct}%"></span></span>
             </div>
           </div>
@@ -2333,7 +2441,7 @@
       }
     }
 
-    function renderTopSlots(counts, memberCount){
+    function renderTopSlots(counts, memberCount, totalCount){
       if(!elTopSlots) return;
       updateTopViewUI();
 
@@ -2349,7 +2457,7 @@
       }
 
       if(showGraph){
-        renderTopGraph(counts, memberCount);
+        renderTopGraph(counts, totalCount);
         return;
       }
 
@@ -2368,10 +2476,11 @@
       }
 
       elTopSlotsList.innerHTML = ranked.map(([slotKey, count]) => {
-        const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
+        const pct = totalCount ? Math.round((count / totalCount) * 100) : 0;
         const missing = getMissingForSlot(slotKey);
-        const isFull = missing.length === 0;
-        const missingText = missing.length ? `Missing: ${missing.join(", ")}` : "Full team available";
+        const missingUnsubmitted = Math.max(0, totalCount - memberCount);
+        const isFull = missing.length === 0 && missingUnsubmitted === 0 && totalCount >= 2;
+        const missingText = formatMissingText(missing, missingUnsubmitted);
         const star = isFull ? `<span class="topSlotStar" title="Full team available">★</span>` : "";
         const label = escapeHtml(slotLabelRange(slotKey));
         return `
@@ -2381,7 +2490,7 @@
               <div class="topSlotMissing" title="${escapeHtml(missingText)}">${escapeHtml(missingText)}</div>
             </div>
             <div class="topSlotMeta">
-              <span>${count}/${memberCount}</span>
+              <span>${count}/${totalCount || 0}</span>
               <span class="miniBar" aria-hidden="true"><span style="width:${pct}%"></span></span>
             </div>
           </div>
@@ -2399,7 +2508,7 @@
       }
     }
 
-    function renderTopGraph(counts, memberCount){
+    function renderTopGraph(counts, totalCount){
       if(!elTopSlotsGraph) return;
       const zone = showLocal ? userTz : roomPreferredTz;
       const dayLabels = roomDays.map(dayId => ({ id: dayId, label: dayLabelShort(dayId) }));
@@ -2410,9 +2519,9 @@
         const cells = dayLabels.map(({ id, label: dayLabel }) => {
           const key = slotKey(id, minutes);
           const count = counts[key] || 0;
-          const pct = memberCount ? Math.round((count / memberCount) * 100) : 0;
-          const isFull = memberCount > 0 && count === memberCount;
-          const cellLabel = `${dayLabel} ${timeLabel} - ${count}/${memberCount}`;
+          const pct = totalCount ? Math.round((count / totalCount) * 100) : 0;
+          const isFull = totalCount >= 2 && count === totalCount;
+          const cellLabel = `${dayLabel} ${timeLabel} - ${count}/${totalCount || 0}`;
           const star = isFull ? `<span class="heatmapStar" aria-hidden="true">★</span>` : "";
           return `<div class="heatmapCell" style="--heat:${pct}%;" title="${escapeHtml(cellLabel)}" aria-label="${escapeHtml(cellLabel)}">${star}</div>`;
         }).join("");
@@ -2458,9 +2567,23 @@
       return missing;
     }
 
+    function updateMemberCountDisplay(memberCount){
+      if(!elMemberCount) return;
+      const expected = normalizeExpectedMembers(roomExpectedMembers);
+      if(expected && expected >= memberCount){
+        elMemberCount.textContent = `${memberCount}/${expected}`;
+      }else{
+        elMemberCount.textContent = `${memberCount}`;
+      }
+      if(elMemberCountMeta){
+        const missing = expected > memberCount ? expected - memberCount : 0;
+        elMemberCountMeta.textContent = missing > 0 ? `Missing: ${missing}` : "";
+      }
+    }
+
     function renderMembers(){
       const members = Object.values(roomMembers);
-      elMemberCount.textContent = members.length;
+      updateMemberCountDisplay(members.length);
 
       elMembers.innerHTML = "";
 
@@ -2672,6 +2795,7 @@
         dateStart: roomDateStart,
         dateEnd: roomDateEnd,
         meetingMinutes: roomMeetingMinutes,
+        expectedMembers: roomExpectedMembers,
         exportedAt: new Date().toISOString(),
         members
       };
@@ -2719,8 +2843,8 @@
     }
 
     // ---------- Wiring ----------
-    elSaveBtn.addEventListener("click", () => void saveMe(true));
-    elClearMeBtn.addEventListener("click", () => void clearMyPicks());
+    elSaveBtns.forEach((btn) => btn.addEventListener("click", () => void saveMe(true)));
+    elClearMeBtns.forEach((btn) => btn.addEventListener("click", () => void clearMyPicks()));
     elExportBtn.addEventListener("click", exportJson);
     elResetRoomBtn.addEventListener("click", () => void resetRoom());
     elToggleLocal.addEventListener("click", toggleLocal);
@@ -2732,6 +2856,10 @@
     elGoogleBtn.addEventListener("click", () => void signInGoogle());
     elSignOutBtn.addEventListener("click", () => void signOutUser());
     elAuthSubmitBtn.addEventListener("click", submitAuth);
+    if(elForgotPasswordBtn) elForgotPasswordBtn.addEventListener("click", () => {
+      setAuthHint("Your mail provider or institution may block the reset email. If that happens, contact an admin to reset your account or use another email address.");
+      void sendPasswordReset();
+    });
     elRoomToggleBtn.addEventListener("click", () => void toggleRoomStatus());
 
     if(elRoomTzSelect){
@@ -2747,6 +2875,7 @@
     if(elRoomDateStart) elRoomDateStart.addEventListener("change", commitRoomDates);
     if(elRoomDateEnd) elRoomDateEnd.addEventListener("change", commitRoomDates);
     if(elRoomMeetingMinutes) elRoomMeetingMinutes.addEventListener("change", commitRoomMeetingMinutes);
+    if(elRoomExpectedMembers) elRoomExpectedMembers.addEventListener("change", commitRoomExpectedMembers);
 
     if(elTopRankBtn) elTopRankBtn.addEventListener("click", () => setTopView("rank"));
     if(elTopGraphBtn) elTopGraphBtn.addEventListener("click", () => setTopView("graph"));

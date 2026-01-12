@@ -21,13 +21,14 @@ These apply to everyone in the room:
 - **Preferred time zone**: the room's default time base.
 - **Scheduled dates**: date range for the scheduling period.
 - **Meeting duration (minutes)**: default 60.
+- **Expected team members**: optional count to track missing submissions.
 - **Active days**: choose which weekdays are available.
 - **Room status**: open or closed. Closing the room disables edits.
 
 ## 4) Pick your availability
 - Select 30-minute slots in the grid.
 - Use **Save / Update** to submit your picks.
-- Use **Clear my picks** to remove your selections.
+- Use **Clear picks** to remove your selections.
 
 ## 5) Time display
 - The toggle "Showing times in" switches the bold time between your local time and the room's default time.
