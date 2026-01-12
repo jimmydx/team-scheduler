@@ -318,6 +318,15 @@
       color:var(--muted);
       padding-left:var(--axis-width);
     }
+    .heatmapFilters{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      align-items:center;
+      padding-left:var(--axis-width);
+    }
+    .heatmapFilterLabel{font-size:11px;color:var(--muted);margin-right:4px;}
+    .heatmapPill{padding:5px 8px;font-size:10px;}
     .heatmapNote{
       font-size:11px;
       color:var(--muted);
@@ -976,6 +985,7 @@
     let showComments = false;
     let commentSaveTimer = null;
     let topView = "graph";
+    let heatmapFilter = new Set();
     let roomAdmins = [];
     let isAdmin = false;
     let roomUnsub = null;
@@ -1761,6 +1771,7 @@
           roomExpectedMembers = 0;
           roomAdmins = [];
           isAdmin = false;
+          heatmapFilter.clear();
           setCommentsView(false);
           renderAll();
 
@@ -2353,8 +2364,7 @@
     }
 
     // ---------- Counts / common slots ----------
-    function computeCounts(){
-      const members = Object.values(roomMembers);
+    function computeCountsForMembers(members){
       const counts = {};
       for(const dayId of roomDays){
         SLOT_START_MINUTES.forEach(minutes => counts[slotKey(dayId, minutes)] = 0);
@@ -2367,7 +2377,12 @@
           if(counts[s] !== undefined) counts[s] += 1;
         }
       }
-      const memberCount = members.length;
+      return { counts, memberCount: members.length };
+    }
+
+    function computeCounts(){
+      const members = Object.values(roomMembers);
+      const { counts, memberCount } = computeCountsForMembers(members);
       const totalCount = getExpectedMemberTotal(memberCount);
       return { counts, memberCount, totalCount };
     }
@@ -2379,6 +2394,46 @@
         if(counts[k] === totalCount) common.add(k);
       }
       return common;
+    }
+
+    function getHeatmapMembers(){
+      const members = Object.values(roomMembers);
+      if(!members.length){
+        return { members, selected: members, isAll: true };
+      }
+      const validIds = new Set(members.map(m => m.email));
+      if(heatmapFilter.size){
+        for(const id of Array.from(heatmapFilter)){
+          if(!validIds.has(id)) heatmapFilter.delete(id);
+        }
+      }
+      if(heatmapFilter.size === 0){
+        return { members, selected: members, isAll: true };
+      }
+      const selected = members.filter(m => heatmapFilter.has(m.email));
+      if(selected.length === 0 || selected.length === members.length){
+        heatmapFilter.clear();
+        return { members, selected: members, isAll: true };
+      }
+      return { members, selected, isAll: false };
+    }
+
+    function refreshTopView(){
+      const { counts, memberCount, totalCount } = computeCounts();
+      renderTopSlots(counts, memberCount, totalCount);
+    }
+
+    function toggleHeatmapMember(email){
+      const id = String(email || "").toLowerCase();
+      if(!id) return;
+      if(heatmapFilter.size === 0){
+        heatmapFilter.add(id);
+      }else if(heatmapFilter.has(id)){
+        heatmapFilter.delete(id);
+      }else{
+        heatmapFilter.add(id);
+      }
+      refreshTopView();
     }
 
     // ---------- Rendering ----------
@@ -2511,6 +2566,10 @@
     function renderTopGraph(counts, totalCount){
       if(!elTopSlotsGraph) return;
       const zone = showLocal ? userTz : roomPreferredTz;
+      const { members, selected, isAll } = getHeatmapMembers();
+      const filtered = isAll ? null : computeCountsForMembers(selected);
+      const graphCounts = isAll ? counts : filtered.counts;
+      const graphTotal = isAll ? totalCount : filtered.memberCount;
       const dayLabels = roomDays.map(dayId => ({ id: dayId, label: dayLabelShort(dayId) }));
       const timeLabels = SLOT_START_MINUTES.map(minutes => timeOnlyInZone(minutes, zone));
 
@@ -2518,10 +2577,10 @@
         const timeLabel = timeLabels[index];
         const cells = dayLabels.map(({ id, label: dayLabel }) => {
           const key = slotKey(id, minutes);
-          const count = counts[key] || 0;
-          const pct = totalCount ? Math.round((count / totalCount) * 100) : 0;
-          const isFull = totalCount >= 2 && count === totalCount;
-          const cellLabel = `${dayLabel} ${timeLabel} - ${count}/${totalCount || 0}`;
+          const count = graphCounts[key] || 0;
+          const pct = graphTotal ? Math.round((count / graphTotal) * 100) : 0;
+          const isFull = graphTotal >= 2 && count === graphTotal;
+          const cellLabel = `${dayLabel} ${timeLabel} - ${count}/${graphTotal || 0}`;
           const star = isFull ? `<span class="heatmapStar" aria-hidden="true">★</span>` : "";
           return `<div class="heatmapCell" style="--heat:${pct}%;" title="${escapeHtml(cellLabel)}" aria-label="${escapeHtml(cellLabel)}">${star}</div>`;
         }).join("");
@@ -2533,6 +2592,27 @@
 
       const axis = dayLabels.map(({ label }) => `<div class="heatmapDay">${escapeHtml(label)}</div>`).join("");
       const gridStyle = `style="--day-count:${dayLabels.length}"`;
+      const sortedMembers = members.slice().sort((a, b) => memberDisplayName(a).localeCompare(memberDisplayName(b)));
+      const filterRow = members.length ? `
+        <div class="heatmapFilters">
+          <span class="heatmapFilterLabel">Filter members:</span>
+          <button type="button" class="dayTab heatmapPill ${isAll ? "active" : ""}" data-all="true" aria-pressed="${isAll}">
+            All
+          </button>
+          ${sortedMembers.map((member) => {
+            const id = String(member.email || "").toLowerCase();
+            const active = !isAll && heatmapFilter.has(id);
+            const initials = memberInitials(member);
+            const label = memberDisplayName(member);
+            return `
+              <button type="button" class="dayTab heatmapPill ${active ? "active" : ""}"
+                data-email="${escapeHtml(id)}" aria-pressed="${active}" title="${escapeHtml(label)}">
+                ${escapeHtml(initials)}
+              </button>
+            `;
+          }).join("")}
+        </div>
+      ` : "";
 
       elTopSlotsGraph.innerHTML = `
         <div class="heatmap">
@@ -2551,8 +2631,25 @@
             <span>Everyone</span>
             <div class="heatmapNote"><span class="heatmapStar" aria-hidden="true">★</span> Full team availability</div>
           </div>
+          ${filterRow}
         </div>
       `;
+
+      const filterWrap = elTopSlotsGraph.querySelector(".heatmapFilters");
+      if(filterWrap){
+        const allBtn = filterWrap.querySelector("[data-all]");
+        if(allBtn){
+          allBtn.addEventListener("click", () => {
+            heatmapFilter.clear();
+            refreshTopView();
+          });
+        }
+        filterWrap.querySelectorAll("[data-email]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            toggleHeatmapMember(btn.getAttribute("data-email"));
+          });
+        });
+      }
     }
 
     function getMissingForSlot(slotKey){
@@ -2678,6 +2775,31 @@
       const trimmed = String(text || "").trim();
       if(!trimmed) return "";
       return escapeHtml(trimmed).replaceAll("\n", "<br>");
+    }
+
+    function memberDisplayName(member){
+      const name = String(member?.name || "").trim();
+      if(name) return name;
+      const email = String(member?.email || "").trim();
+      return email || "Unknown";
+    }
+
+    function memberInitials(member){
+      const name = String(member?.name || "").trim();
+      if(name){
+        const parts = name.split(/\s+/).filter(Boolean);
+        if(parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        const first = parts[0][0] || "";
+        const last = parts[parts.length - 1][0] || "";
+        return `${first}${last}`.toUpperCase();
+      }
+      const email = String(member?.email || "").trim();
+      if(email){
+        const local = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "");
+        if(local.length >= 2) return local.slice(0, 2).toUpperCase();
+        return local.toUpperCase() || "??";
+      }
+      return "??";
     }
 
     function renderAll(){

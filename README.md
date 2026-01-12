@@ -41,6 +41,7 @@ Your comments are saved with your entry and shown under your slots in the team l
 ## 7) Ranking vs heatmap
 At the bottom of the scheduler:
 - **Graph** (default) shows a heatmap of availability. The star means full-team availability.
+- Use the member initials pills under the heatmap to filter who is included.
 - **Ranking** shows the top 7 most chosen time slots.
 
 ## 8) Team selections list

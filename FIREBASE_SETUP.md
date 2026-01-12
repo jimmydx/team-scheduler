@@ -46,7 +46,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['days','preferredTz','dateStart','dateEnd','meetingMinutes','expectedMembers','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail']);
       allow update: if isSignedIn()
         && request.resource.data.keys().hasOnly(['days','preferredTz','dateStart','dateEnd','meetingMinutes','expectedMembers','updatedAt','isOpen','statusUpdatedAt','statusByName','statusByEmail','admins'])
-        && request.resource.data.admins == resource.data.admins;
+        && (!resource.data.keys().hasAny(['admins']) || request.resource.data.admins == resource.data.admins);
       allow delete: if isRoomAdmin(roomId);
     }
     match /rooms/{roomId}/members/{memberId} {
@@ -70,5 +70,7 @@ To enable the "Reset room" button, add an `admins` array to the room document in
 ```json
 admins: ["you@example.com"]
 ```
+
+If you don't need admin controls, you can leave `admins` unset. Room settings updates will still work.
 
 Sign in with one of those emails; the Reset button will be enabled and will delete all member entries for that room.
