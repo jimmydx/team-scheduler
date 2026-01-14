@@ -30,6 +30,7 @@
       --accent:#0284c7;
       --accent2:#7c3aed;
       --star:#fde68a;
+      --starFiltered:#f59e0b;
       --good:#059669;
       --bad:#e11d48;
       --shadow: 0 12px 30px rgba(2,6,23,.10);
@@ -54,6 +55,7 @@
       --accent:#7dd3fc;
       --accent2:#c084fc;
       --star:#fde68a;
+      --starFiltered:#f59e0b;
       --good:#34d399;
       --bad:#fb7185;
       --shadow: 0 12px 30px rgba(0,0,0,.35);
@@ -70,6 +72,7 @@
 
     body{
       margin:0;
+      padding:0 20px;
       font-family:var(--sans);
       background:
         radial-gradient(1200px 700px at 20% 10%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 60%),
@@ -79,7 +82,7 @@
       line-height:1.35;
     }
 
-    .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 54px;}
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 0 54px;}
 
     header{
       display:flex;
@@ -310,6 +313,7 @@
       justify-content:center;
     }
     .heatmapStar{font-size:12px;color:var(--star);line-height:1;}
+    .heatmap.isFiltered .heatmapStar{color:var(--starFiltered);}
     .heatmapLegend{
       display:flex;
       align-items:center;
@@ -2398,6 +2402,8 @@
 
     function getHeatmapMembers(){
       const members = Object.values(roomMembers);
+      const expectedTotal = getExpectedMemberTotal(members.length);
+      const hasExpectedGap = expectedTotal > members.length;
       if(!members.length){
         return { members, selected: members, isAll: true };
       }
@@ -2411,7 +2417,11 @@
         return { members, selected: members, isAll: true };
       }
       const selected = members.filter(m => heatmapFilter.has(m.email));
-      if(selected.length === 0 || selected.length === members.length){
+      if(selected.length === 0){
+        heatmapFilter.clear();
+        return { members, selected: members, isAll: true };
+      }
+      if(selected.length === members.length && !hasExpectedGap){
         heatmapFilter.clear();
         return { members, selected: members, isAll: true };
       }
@@ -2567,6 +2577,7 @@
       if(!elTopSlotsGraph) return;
       const zone = showLocal ? userTz : roomPreferredTz;
       const { members, selected, isAll } = getHeatmapMembers();
+      const isFiltered = !isAll;
       const filtered = isAll ? null : computeCountsForMembers(selected);
       const graphCounts = isAll ? counts : filtered.counts;
       const graphTotal = isAll ? totalCount : filtered.memberCount;
@@ -2614,8 +2625,10 @@
         </div>
       ` : "";
 
+      const starLabel = isFiltered ? "Full filtered team availability" : "Full team availability";
+
       elTopSlotsGraph.innerHTML = `
-        <div class="heatmap">
+        <div class="heatmap${isFiltered ? " isFiltered" : ""}">
           <div class="heatmapScroll">
             <div class="heatmapAxis" ${gridStyle}>
               <div></div>
@@ -2629,7 +2642,7 @@
             <span>None</span>
             <span class="heatmapScale" aria-hidden="true"></span>
             <span>Everyone</span>
-            <div class="heatmapNote"><span class="heatmapStar" aria-hidden="true">★</span> Full team availability</div>
+            <div class="heatmapNote"><span class="heatmapStar" aria-hidden="true">★</span> ${starLabel}</div>
           </div>
           ${filterRow}
         </div>
