@@ -896,7 +896,6 @@
     const DEFAULT_ROOM_DAYS = ["mon", "tue", "wed", "thu", "fri"];
     const REF_DATE = { year: 2026, month: 5, day: 1 }; // stable conversion date
     const ET_TIMEZONE = "America/New_York";
-    const SCHEDULE_CLOSE_ET = makeZonedDate(2026, 5, 15, 23, 59, ET_TIMEZONE, 59);
     const DAY_LOOKUP = new Map(DAY_OPTIONS.map(d => [d.id, d]));
     const DAY_ORDER = new Map(DAY_OPTIONS.map((d, i) => [d.id, i]));
     const SLOT_TIME_SET = new Set(SLOT_START_MINUTES.map(minutes => slotKeyFromMinutes(minutes)));
@@ -996,7 +995,6 @@
     let roomDocUnsub = null;
     let roomConfigSeeded = false;
     let roomDaysSaveTimer = null;
-    let scheduleClosed = false;
     let app = null;
     let auth = null;
     let authUser = null;
@@ -1156,7 +1154,7 @@
     }
 
     function shouldShowSignInHint(){
-      return !authUser && !scheduleClosed && roomOpen;
+      return !authUser && roomOpen;
     }
 
     function showCursorHint(x, y){
@@ -2036,24 +2034,14 @@
       return asUTC - date.getTime();
     }
 
-    function isSchedulingClosed(){
-      return Date.now() >= SCHEDULE_CLOSE_ET.getTime();
-    }
-
     function isInteractionLocked(){
-      return scheduleClosed || !roomOpen || !authUser;
+      return !roomOpen || !authUser;
     }
 
     function lockMessage(){
-      if(scheduleClosed) return "Scheduling is closed.";
       if(!roomOpen) return "Room is closed.";
       if(!authUser) return "Sign in to continue.";
       return "";
-    }
-
-    function updateScheduleStatus(){
-      scheduleClosed = isSchedulingClosed();
-      updateActionState();
     }
 
     function updateActionState(){
@@ -2831,7 +2819,7 @@
     }
 
     function autoSaveIfIdentified(){
-      if(scheduleClosed || !roomOpen || !db || !authUser) return;
+      if(!roomOpen || !db || !authUser) return;
       const rk = roomKey();
       const name = elName.value.trim();
       const email = getUserEmail();
@@ -2841,7 +2829,6 @@
     }
 
     async function saveMe(showToast=true){
-      if(scheduleClosed) return toast("Scheduling is closed.");
       if(!roomOpen) return toast("Room is closed.");
       const rk = ensureActiveRoom();
       const name = elName.value.trim();
@@ -2872,7 +2859,6 @@
     }
 
     async function clearMyPicks(){
-      if(scheduleClosed) return toast("Scheduling is closed.");
       if(!roomOpen) return toast("Room is closed.");
       const rk = ensureActiveRoom();
       const name = elName.value.trim();
@@ -3017,7 +3003,6 @@
 
     if(elCommentsToggle){
       elCommentsToggle.addEventListener("click", () => {
-        if(scheduleClosed) return toast("Scheduling is closed.");
         if(!ensureAuth()) return;
         if(!roomOpen) return toast("Room is closed.");
         const rk = ensureActiveRoom();
@@ -3091,10 +3076,9 @@
       initTimeZoneOptions();
       initFirebase();
       handleEmailLinkSignIn();
-      updateScheduleStatus();
+      updateActionState();
       setRoomFromInput();
       renderAll();
-      setInterval(updateScheduleStatus, 60 * 1000);
     })();
   </script>
 </body>
