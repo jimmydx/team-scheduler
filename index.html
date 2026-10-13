@@ -2363,8 +2363,8 @@
       }
 
       for(const m of members){
-        const slots = filterSlots(m.slots);
-        if(!slots.length) continue;
+        const slots = new Set(filterSlots(m.slots));
+        if(!slots.size) continue;
         for(const s of slots){
           if(counts[s] !== undefined) counts[s] += 1;
         }
@@ -2571,6 +2571,15 @@
       const graphTotal = isAll ? totalCount : filtered.memberCount;
       const dayLabels = roomDays.map(dayId => ({ id: dayId, label: dayLabelShort(dayId) }));
       const timeLabels = SLOT_START_MINUTES.map(minutes => timeOnlyInZone(minutes, zone));
+      const namesBySlot = new Map();
+      for(const member of isAll ? members : selected){
+        const name = memberDisplayName(member);
+        for(const key of new Set(filterSlots(member.slots))){
+          if(!namesBySlot.has(key)) namesBySlot.set(key, []);
+          namesBySlot.get(key).push(name);
+        }
+      }
+      for(const names of namesBySlot.values()) names.sort((a, b) => a.localeCompare(b));
 
       const rows = SLOT_START_MINUTES.map((minutes, index) => {
         const timeLabel = timeLabels[index];
@@ -2580,8 +2589,15 @@
           const pct = graphTotal ? Math.round((count / graphTotal) * 100) : 0;
           const isFull = graphTotal >= 2 && count === graphTotal;
           const cellLabel = `${dayLabel} ${timeLabel} - ${count}/${graphTotal || 0}`;
+          const names = namesBySlot.get(key) || [];
+          const hoverText = names.length
+            ? `${cellLabel}\nSelected by:\n${names.join("\n")}`
+            : `${cellLabel}\nNo one selected this time.`;
+          const accessibleLabel = names.length
+            ? `${cellLabel}. Selected by: ${names.join(", ")}.`
+            : `${cellLabel}. No one selected this time.`;
           const star = isFull ? `<span class="heatmapStar" aria-hidden="true">★</span>` : "";
-          return `<div class="heatmapCell" style="--heat:${pct}%;" title="${escapeHtml(cellLabel)}" aria-label="${escapeHtml(cellLabel)}">${star}</div>`;
+          return `<div class="heatmapCell" style="--heat:${pct}%;" title="${escapeHtml(hoverText)}" aria-label="${escapeHtml(accessibleLabel)}">${star}</div>`;
         }).join("");
         return `
           <div class="heatmapTime">${escapeHtml(timeLabel)}</div>
